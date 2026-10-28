@@ -1,0 +1,107 @@
+// AI.js - 작업 한 줄을 AI에게 보내서 판단 결과를 받는다. (AI를 바꿔 끼우는 곳은 여기 한 군데뿐)
+// 지금은 구글 Gemini(무료 사용량 있음)를 부른다. 다른 AI로 바꾸려면 "AI호출" 함수만 바꾸면 된다.
+// ※ 이 함수가 실행되면 입력한 한 줄이 인터넷을 통해 AI 서비스로 전송됩니다.
+(function (전역) {
+  "use strict";
+
+  var 기본모델 = "gemini-flash-latest";
+  var 주소 = "https://generativelanguage.googleapis.com/v1beta/models/";
+
+  // AI에게 보낼 질문 글을 만든다. 허가서 항목은 양식에 정해진 목록을 그대로 알려 주고, 체크할지 말지만 판단하게 한다.
+  function 질문만들기(글, 허가서항목, 오늘) {
+    오늘 = 오늘 || new Date();
+    var 오늘글 = 오늘.getFullYear() + "년 " + (오늘.getMonth() + 1) + "월 " + 오늘.getDate() + "일";
+    var 목록 = function (배열) { return 배열.map(function (x, i) { return (i + 1) + ". " + x.항목; }).join("\n"); };
+    return [
+      "당신은 사업장 안전관리 담당자를 돕는 안전 전문가입니다. 아래 '작업 한 줄'을 읽고 수시 위험성평가 서류 작성에 필요한 내용을 판단해 JSON으로만 답하세요.",
+      "오늘 날짜는 " + 오늘글 + "입니다. (연습용 가상 문장입니다.)",
+      "",
+      "[작업 한 줄]",
+      글,
+      "",
+      "[규칙]",
+      "- 지원 범위는 고소작업(사다리, 비계, 고소작업대, 지붕·외벽 등 높은 곳 작업)입니다. 고소작업이 아니면 고소작업여부를 false로 하고 범위밖사유만 채우세요(전기작업이면 '전기작업', 아니면 '고소작업이 아닌 작업').",
+      "- 정보는 한 줄에 있는 것만 적고, 없는 것은 절대 지어내지 말고 null로 두세요. 날짜는 '10월 30일' 모양으로, '내일' 같은 말은 오늘 날짜를 기준으로 계산하되 날짜확인필요를 true로 하세요.",
+      "- 인원은 '검사1팀 1명, 검사2팀 1명 (총 2명)'처럼 적고 총인원은 숫자로 적으세요.",
+      "- 위험요인은 이 작업에서 실제로 생길 수 있는 것을 3~6개 스스로 생각해 적으세요. 빈도와 강도는 각각 1~4의 정수이고, 위험성은 빈도×강도입니다. 위험성이 8 이상이면 감소대책과 개선후빈도·개선후강도를 꼭 적으세요.",
+      "- 허가서체크는 아래 양식 항목마다 이번 작업에서 체크해야 하면 true, 아니면 false로 항목 순서대로 적으세요. (항목 문구는 바꾸지 마세요.)",
+      "- 문장은 짧고 쉬운 한국어로 쓰세요. 실제 기관명, 사람 이름, 연락처는 만들지 마세요.",
+      "",
+      "[안전작업 허가서 양식 항목 - 공통사항 (7개)]",
+      목록(허가서항목.공통),
+      "",
+      "[안전작업 허가서 양식 항목 - 고소작업 (8개)]",
+      목록(허가서항목.고소),
+      "",
+      "[답 모양 - 이 JSON만 출력]",
+      JSON.stringify({
+        고소작업여부: true,
+        범위밖사유: "",
+        정보: { 날짜: "10월 30일", 날짜확인필요: false, 시간: null, 장소: "청사 식당", 인원: "검사1팀 1명, 검사2팀 1명 (총 2명)", 총인원: 2,
+          작업내용: "사다리를 이용한 천장 보수작업", 사용기구: ["전동드릴", "사다리"], 구분: "자체작업", 업체명: null },
+        위험요인: [{ 위험요인: "사다리 추락", 상황결과: "균형을 잃고 떨어져 골절", 현재조치: "사다리 상태 점검, 2인 1조", 빈도: 2, 강도: 3,
+          감소대책: "", 개선후빈도: null, 개선후강도: null }],
+        허가서체크: { 공통: [true, true, true, true, true, true, true], 고소: [false, true, false, false, false, true, true, true] },
+        승인요청서: { 사전조사: "작업 장소와 작업 높이, 주변 상황을 확인한 내용", 안전대책: "1. ...\n2. ..." },
+        TBM: { 위험요인: "1. ...\n2. ...", 안전대책: "1. ...\n2. ...", 교육내용: "오늘 작업 전 교육한 내용" },
+        안전중점: "1. ...\n2. ...",
+      }),
+    ].join("\n");
+  }
+
+  function JSON꺼내기(글) {
+    var 깨끗 = String(글 || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+    var 시작 = 깨끗.indexOf("{"), 끝 = 깨끗.lastIndexOf("}");
+    if (시작 < 0 || 끝 < 시작) throw new Error("AI의 답을 읽을 수 없습니다. 다시 시도해 주세요.");
+    return JSON.parse(깨끗.slice(시작, 끝 + 1));
+  }
+
+  // 실제로 AI 서비스를 부르는 곳. 다른 AI로 바꿀 때는 이 함수만 바꾸면 된다.
+  async function AI호출(질문, 설정, 불러오기) {
+    var 키 = (설정 && 설정.키 || "").trim();
+    if (!키) throw new Error("AI 키가 없습니다. 설정에서 AI 키를 붙여 넣거나 '연습 모드'를 쓰세요.");
+    var 모델 = (설정.모델 || 기본모델).trim();
+    var 보내기 = 불러오기 || 전역.fetch;
+    var 응답;
+    try {
+      응답 = await 보내기(주소 + encodeURIComponent(모델) + ":generateContent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": 키 },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: 질문 }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
+        }),
+      });
+    } catch (오류) {
+      throw new Error("AI 서비스에 연결하지 못했습니다. 인터넷 연결을 확인하세요.");
+    }
+    if (!응답.ok) {
+      var 설명 = "";
+      try { 설명 = ((await 응답.json()).error || {}).message || ""; } catch (_) { /* 무시 */ }
+      if (응답.status === 400 && /API key/i.test(설명)) throw new Error("AI 키가 올바르지 않습니다. 설정에서 키를 다시 확인하세요.");
+      if (응답.status === 401 || 응답.status === 403) throw new Error("AI 키를 쓸 수 없습니다(권한 없음). 키를 다시 확인하세요.");
+      if (응답.status === 404) throw new Error("모델 이름을 찾을 수 없습니다. 설정에서 모델 이름을 확인하세요.");
+      if (응답.status === 429) throw new Error("무료 사용량을 넘었습니다. 잠시 뒤에 다시 시도하세요.");
+      throw new Error("AI 서비스 오류(" + 응답.status + "). " + 설명);
+    }
+    var 본문 = await 응답.json();
+    var 조각 = (((본문.candidates || [])[0] || {}).content || {}).parts || [];
+    var 글 = 조각.map(function (p) { return p.text || ""; }).join("");
+    if (!글) throw new Error("AI가 답을 주지 않았습니다. 다시 시도해 주세요.");
+    return JSON꺼내기(글);
+  }
+
+  // 한 줄 → 판단 결과. 규칙.결과다듬기로 점수와 형식을 맞춰서 돌려준다.
+  async function 분석(글, 설정, 옵션) {
+    옵션 = 옵션 || {};
+    var 데이터 = 옵션.데이터 || 전역.데이터;
+    var 규칙 = 옵션.규칙 || 전역.규칙;
+    var 질문 = 질문만들기(글, 데이터.허가서항목, 옵션.오늘);
+    var 원래 = await AI호출(질문, 설정, 옵션.불러오기);
+    return 규칙.결과다듬기(원래);
+  }
+
+  var AI = { 기본모델: 기본모델, 질문만들기: 질문만들기, JSON꺼내기: JSON꺼내기, AI호출: AI호출, 분석: 분석 };
+  if (typeof module !== "undefined" && module.exports) module.exports = AI;
+  else 전역.AI = AI;
+})(typeof window !== "undefined" ? window : globalThis);

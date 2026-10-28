@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수시 위험성평가 서류 도우미</title>
+<link rel="stylesheet" href="화면.css">
+</head>
+<body>
+
+<header class="맨위">
+  <h1>수시 위험성평가 서류 도우미 <small style="font-weight:normal;font-size:13px;color:#5b6b7b">(연습용 · 고소작업)</small></h1>
+  <div class="맨위버튼">
+    <span id="모드표시" class="모드"></span>
+    <button id="시험열기" class="보조">연습자료 자동 시험</button>
+    <button id="설정열기" class="보조">설정</button>
+  </div>
+</header>
+
+<ol id="단계줄" class="단계줄">
+  <li data-단계="1">1 입력</li>
+  <li data-단계="2">2 부족한 정보</li>
+  <li data-단계="3">3 서류 확인</li>
+  <li data-단계="4">4 저장</li>
+</ol>
+
+<main class="본문">
+  <section class="왼쪽" id="왼쪽">
+
+    <!-- 1단계: 한 줄 입력 -->
+    <div class="단계칸" id="칸1">
+      <h2>1. 작업 내용을 한 줄로 적어 주세요</h2>
+      <p class="도움">날짜, 인원, 장소, 작업 내용, 사용 기구를 한 줄에 적으면 됩니다.<br>연습할 때는 가상 문장만 쓰세요.</p>
+      <textarea id="한줄" rows="5" placeholder="예) 10월 30일 검사1팀 1명과 검사2팀 1명이 청사 식당에서 사다리를 이용해서 천장 보수작업 진행. 사용기구는 전동드릴 및 사다리"></textarea>
+      <label for="예시">예시 문장 불러오기 (연습자료 20건)</label>
+      <select id="예시"><option value="">직접 적기</option></select>
+      <div class="버튼줄"><button id="분석버튼" class="주요">서류 초안 만들기 ▶</button></div>
+      <div id="분석상태" class="도움"></div>
+    </div>
+
+    <!-- 2단계: 부족한 정보 -->
+    <div class="단계칸" id="칸2" hidden>
+      <h2>2. 부족한 정보를 채워 주세요</h2>
+      <div id="읽은결과"></div>
+      <div id="되묻기칸"></div>
+      <div class="버튼줄"><button id="이전2">◀ 이전</button><button id="다음2" class="주요">다음 ▶</button></div>
+    </div>
+
+    <!-- 3단계: 서류 확인 -->
+    <div class="단계칸" id="칸3" hidden>
+      <h2>3. 서류를 확인하세요</h2>
+      <p class="도움">오른쪽에서 서류 4장을 한눈에 비교하세요. 노란 칸은 비어 있는 칸입니다.</p>
+      <div id="판단요약"></div>
+      <div id="점검목록"></div>
+      <details id="값고치기"><summary>서류 내용 직접 고치기</summary><div id="고치기칸"></div></details>
+      <div class="버튼줄"><button id="이전3">◀ 이전</button><button id="다음3" class="주요">다음 ▶</button></div>
+    </div>
+
+    <!-- 4단계: 저장 -->
+    <div class="단계칸" id="칸4" hidden>
+      <h2>4. 한글 파일로 저장</h2>
+      <p class="도움">서류가 한글(.hwpx) 파일로 내려받아집니다. 받은 파일은 한글 프로그램에서 열어서 확인해 주세요.</p>
+      <div class="버튼줄"><button id="전체받기" class="주요">서류 4개 한꺼번에 받기 (ZIP)</button></div>
+      <p class="도움">ZIP을 풀면 한글 파일 4개가 나옵니다. 하나씩 받으려면 아래 버튼을 누르세요.</p>
+      <div id="개별받기" class="버튼줄"></div>
+      <div class="버튼줄"><button id="이전4">◀ 이전</button><button id="처음으로">처음부터 다시 하기</button></div>
+    </div>
+
+    <div id="알림" class="알림" hidden></div>
+  </section>
+
+  <section class="오른쪽">
+    <div class="서류들" id="서류들"></div>
+  </section>
+</main>
+
+<!-- 설정 -->
+<dialog id="설정창">
+  <h2>설정</h2>
+  <label><b>판단 방식</b></label>
+  <label style="margin:4px 0"><input type="radio" name="모드" value="연습"> 연습 모드 — AI가 아닌 간단한 규칙으로 판단합니다. 인터넷이 필요 없고, 입력한 내용이 밖으로 나가지 않습니다.</label>
+  <label style="margin:4px 0"><input type="radio" name="모드" value="AI"> AI 모드 — 입력한 한 줄을 AI(구글 Gemini)에 보내서 판단합니다. 인터넷과 AI 키가 필요합니다.</label>
+  <div class="주의">AI 모드에서는 입력한 한 줄이 인터넷으로 AI 서비스에 전송됩니다. 무료 AI는 보낸 내용이 서비스 개선에 쓰일 수 있으니, 연습할 때는 가상 문장만 쓰고 실제 업무 내용은 기관 보안 규정을 확인한 뒤에만 쓰세요.</div>
+  <label for="키입력">AI 키 (비밀번호처럼 다루고 남에게 보여 주지 마세요. 이 컴퓨터의 브라우저에만 저장됩니다)</label>
+  <input type="password" id="키입력" autocomplete="off" placeholder="구글 AI 스튜디오(aistudio.google.com)에서 만든 키">
+  <label for="모델입력">모델 이름 (모르면 그대로 두세요)</label>
+  <input type="text" id="모델입력">
+  <h2 style="margin-top:18px;font-size:16px">서류 양식</h2>
+  <p class="도움">기본은 연습용 가상 양식입니다. 내 양식(.hwpx)을 쓰려면 양식 안에 <code>{{작업명}}</code> 같은 표시를 넣은 파일을 고르세요.</p>
+  <div id="양식설정"></div>
+  <div class="버튼줄">
+    <button id="설정저장" class="주요">저장</button>
+    <button id="설정닫기">닫기</button>
+    <button id="키지우기">저장된 AI 키 지우기</button>
+  </div>
+</dialog>
+
+<!-- 자동 시험 -->
+<dialog id="시험창">
+  <h2>연습자료 자동 시험</h2>
+  <p class="도움">연습자료 20건을 지금 선택된 방식으로 하나씩 판단해 보고, 기대한 대로 되는지 확인합니다.</p>
+  <div id="시험안내" class="주의"></div>
+  <div class="버튼줄"><button id="시험시작" class="주요">시험 시작</button><button id="시험멈춤" disabled>멈춤</button><button id="시험닫기">닫기</button></div>
+  <div id="시험요약" class="도움"></div>
+  <div style="overflow:auto;max-height:50vh"><table class="시험표" id="시험표"></table></div>
+</dialog>
+
+<script src="라이브러리/jszip.min.js"></script>
+<script src="데이터.js"></script>
+<script src="양식/양식데이터.js"></script>
+<script src="규칙.js"></script>
+<script src="서류.js"></script>
+<script src="AI.js"></script>
+<script src="한글.js"></script>
+<script>
+"use strict";
+(function () {
+  var $ = function (선택, 뿌리) { return (뿌리 || document).querySelector(선택); };
+  var 이스케이프 = function (글) { return String(글 == null ? "" : 글).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); };
+  var 저장이름 = "수시위험성평가도우미설정";
+
+  // ----- 상태 -----
+  var 상태 = {
+    단계: 1,
+    결과: null,        // 판단 결과 (규칙.js 또는 AI.js가 만든 것)
+    입력: {},          // 2단계에서 사람이 채운/고친 값
+    확인함: false,     // '날짜 맞아요' 확인
+    수정: {},          // 3단계에서 서류 칸을 직접 고친 값 { 서류이름: { 표시: 값 } }
+    양식: {},          // 서류별 양식: base64 글(기본) 또는 Uint8Array(내 양식)
+    양식이름: {},      // 내 양식을 골랐을 때 파일 이름
+    설정: { 모드: "연습", 키: "", 모델: "" },
+    미리번호: 0,
+  };
+  서류.서류이름.forEach(function (이름) { 상태.양식[이름] = window.양식데이터[이름]; });
+
+  // ----- 설정 저장/불러오기 (브라우저 저장소를 못 쓰는 환경도 있어서 try로 감쌈) -----
+  function 설정불러오기() {
+    try {
+      var 글 = window.localStorage.getItem(저장이름);
+      if (글) Object.assign(상태.설정, JSON.parse(글));
+    } catch (_) { /* 저장소를 못 쓰면 기본값으로 */ }
+  }
+  function 설정저장하기() {
+    try { window.localStorage.setItem(저장이름, JSON.stringify(상태.설정)); return true; } catch (_) { return false; }
+  }
+
+  // ----- 알림 -----
+  function 알림(글, 종류) {
+    var 칸 = $("#알림");
+    if (!글) { 칸.hidden = true; return; }
+    칸.className = "알림" + (종류 ? " " + 종류 : "");
+    칸.textContent = 글;
+    칸.hidden = false;
+  }
+
+  // ----- 모드 표시 -----
+  function 모드그리기() {
+    var 표시 = $("#모드표시");
+    var AI모드 = 상태.설정.모드 === "AI";
+    표시.textContent = AI모드 ? "AI 모드 (인터넷으로 AI에 보냄)" : "연습 모드 (AI 아님 · 인터넷 불필요)";
+    표시.className = "모드" + (AI모드 ? " ai" : "");
+  }
+
+  // ----- 단계 -----
+  function 단계이동(번호) {
+    상태.단계 = 번호;
+    for (var i = 1; i <= 4; i++) {
+      $("#칸" + i).hidden = i !== 번호;
+      var 줄 = $('#단계줄 li[data-단계="' + i + '"]');
+      줄.className = i === 번호 ? "현재" : (i < 번호 ? "완료" : "");
+    }
+    알림("");
+    if (번호 === 2) 되묻기그리기();
+    if (번호 === 3) 확인그리기();
+    if (번호 === 4) 저장그리기();
+  }
+
+  // ----- 서류 값 (자동으로 만든 값 + 3단계에서 고친 값) -----
+  function 빈결과() { return 규칙.결과다듬기({ 고소작업여부: true }); }
+  function 기본값들() { return 서류.값만들기(상태.결과 || 빈결과(), 상태.입력); }
+  function 최종값들() {
+    var 값 = 기본값들();
+    Object.keys(상태.수정).forEach(function (서류이름) {
+      Object.keys(상태.수정[서류이름]).forEach(function (키) { 값[서류이름][키] = 상태.수정[서류이름][키]; });
+    });
+    return 값;
+  }
+
+  // ----- 오른쪽 서류 4장 미리보기 -----
+  function 서류카드만들기() {
+    var 칸 = $("#서류들");
+    칸.innerHTML = "";
+    서류.서류이름.forEach(function (이름) {
+      var 카드 = document.createElement("div");
+      카드.className = "서류카드" + (이름 === "위험성평가표" ? " 넓게" : "");
+      카드.innerHTML = "<h3>" + 이스케이프(이름) + "</h3><div class=\"서류내용\" data-서류=\"" + 이스케이프(이름) + "\"></div>";
+      칸.appendChild(카드);
+    });
+  }
+  var 미리대기 = null;
+  function 미리보기갱신() {
+    clearTimeout(미리대기);
+    미리대기 = setTimeout(미리보기실행, 80);
+  }
+  async function 미리보기실행() {
+    var 번호 = ++상태.미리번호;
+    var 값 = 최종값들();
+    for (var i = 0; i < 서류.서류이름.length; i++) {
+      var 이름 = 서류.서류이름[i];
+      try {
+        var html = await 한글.미리보기(상태.양식[이름], 값[이름]);
+        if (번호 !== 상태.미리번호) return; // 더 새 요청이 있으면 버린다
+        $('.서류내용[data-서류="' + 이름 + '"]').innerHTML = html;
+      } catch (오류) {
+        $('.서류내용[data-서류="' + 이름 + '"]').innerHTML = '<p class="알림 오류">미리보기를 만들 수 없습니다: ' + 이스케이프(오류.message) + "</p>";
+      }
+    }
+  }
+
+  // ----- 1단계 -----
+  function 예시채우기() {
+    var 선택 = $("#예시");
+    window.데이터.예시문장.forEach(function (e) {
+      var 옵션 = document.createElement("option");
+      옵션.value = String(e.번호);
+      옵션.textContent = e.번호 + ". [" + e.종류 + "] " + e.문장.slice(0, 40) + (e.문장.length > 40 ? "…" : "");
+      선택.appendChild(옵션);
+    });
+    선택.addEventListener("change", function () {
+      var 번호 = parseInt(선택.value, 10);
+      if (!번호) return;
+      $("#한줄").value = window.데이터.예시문장[번호 - 1].문장;
+    });
+  }
+
+  async function 판단하기(글) {
+    if (상태.설정.모드 === "AI") {
+      return AI.분석(글, { 키: 상태.설정.키, 모델: 상태.설정.모델 });
+    }
+    return 규칙.연습분석(글);
+  }
+
+  async function 분석하기() {
+    var 글 = $("#한줄").value.trim();
+    if (!글) { 알림("작업 내용을 한 줄 적어 주세요.", "경고"); return; }
+    var 버튼 = $("#분석버튼");
+    버튼.disabled = true;
+    $("#분석상태").textContent = 상태.설정.모드 === "AI" ? "AI가 판단하는 중입니다… (몇 초 걸려요)" : "판단하는 중입니다…";
+    try {
+      상태.결과 = await 판단하기(글);
+      상태.입력 = Object.assign({}, 상태.결과.정보);
+      상태.확인함 = false;
+      상태.수정 = {};
+      $("#분석상태").textContent = "";
+      미리보기갱신();
+      단계이동(2);
+    } catch (오류) {
+      $("#분석상태").textContent = "";
+      알림(오류.message, "오류");
+    } finally {
+      버튼.disabled = false;
+    }
+  }
+
+  // ----- 2단계: 부족한 정보 되묻기 -----
+  var 되묻는질문 = function (칸) {
+    var 찾음 = window.데이터.되묻는칸.filter(function (x) { return x.칸.indexOf(칸) >= 0; })[0];
+    return 찾음 ? 찾음.질문 : "";
+  };
+  var 필수질문 = { 날짜: "작업 날짜가 언제인가요?", 장소: "작업 장소가 어디인가요?", 인원: "몇 명이 작업하나요?", 작업내용: "어떤 작업인가요?" };
+
+  function 입력칸(키, 질문, 필수, 빠짐) {
+    return '<label class="' + (필수 ? "필수" : "") + '" for="입력_' + 키 + '">' + 이스케이프(질문) + (필수 ? ' <span class="필수표시">(꼭 필요)</span>' : "") + "</label>" +
+      '<input type="text" id="입력_' + 키 + '" data-키="' + 키 + '" class="' + (빠짐 ? "빠짐" : "") + '" value="' + 이스케이프(상태.입력[키] || "") + '">';
+  }
+
+  function 되묻기그리기() {
+    var 결과 = 상태.결과;
+    var 정보 = 결과.정보;
+    var 읽음 = $("#읽은결과"), 칸 = $("#되묻기칸");
+    if (!결과.고소작업여부) {
+      읽음.innerHTML = "";
+      칸.innerHTML = '<div class="알림 경고">이 작업은 <b>' + 이스케이프(결과.범위밖사유 || "고소작업이 아닌 작업") + "</b>이라서, 이번 연습 버전에서는 서류를 만들지 않아요.<br>지원하는 작업: 고소작업(사다리, 비계, 고소작업대, 지붕·외벽 등 높은 곳 작업)</div>" +
+        '<div class="버튼줄"><button id="다른작업">다른 작업 적기</button></div>';
+      $("#다른작업").addEventListener("click", function () { 단계이동(1); });
+      $("#다음2").disabled = true;
+      return;
+    }
+    var 줄 = function (이름, 값) { return "<dt>" + 이름 + "</dt><dd>" + (값 ? 이스케이프(값) : "<i>(없음)</i>") + "</dd>"; };
+    읽음.innerHTML = '<div class="읽은결과"><p class="도움" style="margin:0 0 4px">한 줄에서 이렇게 읽었어요.</p><dl style="margin:0">' +
+      줄("날짜", 정보.날짜) + 줄("장소", 정보.장소) + 줄("인원", 정보.인원) + 줄("작업내용", 정보.작업내용) + 줄("사용기구", (정보.사용기구 || []).join(", ")) + "</dl></div>";
+
+    var 빠진 = 규칙.빠진정보찾기(정보);
+    var 조각 = [];
+    if (빠진.필수.length) {
+      조각.push('<div class="알림 경고" style="margin-top:0">한 줄에 없는 정보가 있어요. 아래 칸을 채워 주세요.</div>');
+      빠진.필수.forEach(function (키) { 조각.push(입력칸(키, 필수질문[키], true, !(상태.입력[키] || "").trim())); });
+    }
+    if (빠진.확인.length) {
+      조각.push('<div class="알림 경고">"' + 이스케이프(정보.날짜) + '"로 읽었어요. 날짜가 맞는지 확인해 주세요. (고칠 수 있어요)</div>');
+      조각.push(입력칸("날짜", "작업 날짜", false, false));
+      조각.push('<label style="margin-top:6px"><input type="checkbox" id="날짜확인"' + (상태.확인함 ? " checked" : "") + '> 날짜가 맞아요</label>');
+    }
+    조각.push('<p class="도움" style="margin-top:14px">아래는 비워 두어도 됩니다. (비워 두면 서류에 빈칸으로 나와요)</p>');
+    조각.push(입력칸("시간", 되묻는질문("작업 시간") || "작업 시간", false, false));
+    조각.push('<label for="입력_구분">' + 이스케이프(되묻는질문("자체작업") || "자체작업인가요 도급인가요?") + "</label>" +
+      '<select id="입력_구분" data-키="구분"><option value="자체작업"' + (상태.입력.구분 !== "도급사업" ? " selected" : "") + '>자체작업</option><option value="도급사업"' + (상태.입력.구분 === "도급사업" ? " selected" : "") + ">도급사업</option></select>");
+    if (상태.입력.구분 === "도급사업") 조각.push(입력칸("업체명", 되묻는질문("업체명") || "업체명", false, false));
+    조각.push(입력칸("감독자연락처", 되묻는질문("감독자") || "감독자 연락처", false, false));
+    조각.push(입력칸("승강기사용", 되묻는질문("승강기") || "승강기 사용 여부", false, false));
+    조각.push(입력칸("작성자", "작성자는 누구인가요?", false, false));
+    조각.push(입력칸("확인자", "확인자는 누구인가요?", false, false));
+    칸.innerHTML = 조각.join("");
+
+    칸.querySelectorAll("[data-키]").forEach(function (요소) {
+      var 처리 = function () {
+        상태.입력[요소.getAttribute("data-키")] = 요소.value;
+        if (요소.getAttribute("data-키") === "구분") 되묻기그리기(); // 도급이면 업체명 칸이 나온다
+        else { if (요소.classList.contains("빠짐") && 요소.value.trim()) 요소.classList.remove("빠짐"); 다음확인(); 미리보기갱신(); }
+      };
+      요소.addEventListener(요소.tagName === "SELECT" ? "change" : "input", 처리);
+    });
+    var 체크 = $("#날짜확인");
+    if (체크) 체크.addEventListener("change", function () { 상태.확인함 = 체크.checked; 다음확인(); });
+    다음확인();
+  }
+
+  function 다음확인() {
+    var 결과 = 상태.결과;
+    if (!결과 || !결과.고소작업여부) { $("#다음2").disabled = true; return; }
+    var 빠진 = 규칙.빠진정보찾기(결과.정보);
+    var 필수남음 = 빠진.필수.some(function (키) { return !(상태.입력[키] || "").trim(); });
+    var 확인남음 = 빠진.확인.length > 0 && !상태.확인함;
+    $("#다음2").disabled = 필수남음 || 확인남음;
+  }
+
+  // ----- 3단계: 서류 확인 -----
+  function 확인그리기() {
+    var 결과 = 상태.결과;
+    var 값 = 최종값들();
+    var 줄들 = 결과.위험요인.map(function (x) {
+      return '<tr class="' + (x.점수 >= 8 ? "높음" : "") + '"><td>' + 이스케이프(x.위험요인) + '</td><td class="숫자">' + x.빈도 + '</td><td class="숫자">' + x.강도 + '</td><td class="숫자">' + x.점수 + "</td></tr>";
+    }).join("");
+    $("#판단요약").innerHTML = '<p class="도움" style="margin-bottom:2px"><b>찾아낸 위험요인</b> (점수 = 빈도 × 강도, 8 이상은 감소대책 필요)</p>' +
+      '<table class="판단표"><tr><th>위험요인</th><th>빈도</th><th>강도</th><th>점수</th></tr>' + 줄들 + "</table>";
+    var 빈칸 = 서류.빈칸목록(값, 결과);
+    var 점검 = [];
+    (값.경고 || []).forEach(function (글) { 점검.push('<div class="알림 경고" style="margin:4px 0">' + 이스케이프(글) + "</div>"); });
+    if (빈칸.length) {
+      점검.push('<div class="알림 경고" style="margin:4px 0">도구가 채우지 못한 칸이 ' + 빈칸.length + "개 있어요: " + 이스케이프(빈칸.slice(0, 8).map(function (x) { return x.서류 + "의 " + x.키; }).join(", ")) + (빈칸.length > 8 ? " …" : "") + "<br>(서명, 승인번호처럼 사람이 직접 쓰는 칸은 세지 않았어요.)</div>");
+    } else {
+      점검.push('<div class="알림 성공" style="margin:4px 0">모든 칸이 채워졌어요. (서명, 승인번호처럼 사람이 직접 쓰는 칸은 제외)</div>');
+    }
+    $("#점검목록").innerHTML = 점검.join("");
+    고치기그리기();
+  }
+
+  function 고치기그리기() {
+    var 값 = 기본값들();
+    var 위험수 = (상태.결과.위험요인 || []).length;
+    var 조각 = [];
+    서류.서류이름.forEach(function (이름) {
+      var 키들 = Object.keys(값[이름]).filter(function (키) {
+        var 행 = 키.match(/^행(\d+)_/);
+        return !행 || parseInt(행[1], 10) <= 위험수;
+      });
+      조각.push("<details><summary>" + 이스케이프(이름) + "</summary>");
+      var 앞행 = null;
+      키들.forEach(function (키) {
+        var 행 = 키.match(/^행(\d+)_/);
+        if (행 && 행[1] !== 앞행) { 앞행 = 행[1]; 조각.push('<div class="행묶음"><b>위험요인 ' + 행[1] + "번 줄</b></div>"); }
+        var 수정됨 = 상태.수정[이름] && Object.prototype.hasOwnProperty.call(상태.수정[이름], 키);
+        var 현재 = 수정됨 ? 상태.수정[이름][키] : 값[이름][키];
+        if (현재 === 한글.해당없음) 현재 = "";
+        조각.push('<div class="값줄"><label>' + 이스케이프(키.replace(/^행\d+_/, "")) + '</label><textarea rows="' + (String(현재).indexOf("\n") >= 0 || String(현재).length > 40 ? 3 : 1) + '" data-서류="' + 이스케이프(이름) + '" data-표시="' + 이스케이프(키) + '" class="' + (수정됨 ? "수정됨" : "") + '">' + 이스케이프(현재) + "</textarea></div>");
+      });
+      조각.push("</details>");
+    });
+    조각.push('<div class="버튼줄"><button id="수정되돌리기" class="보조">고친 내용 모두 되돌리기</button></div>');
+    $("#고치기칸").innerHTML = 조각.join("");
+    $("#고치기칸").querySelectorAll("textarea").forEach(function (칸) {
+      칸.addEventListener("input", function () {
+        var 이름 = 칸.getAttribute("data-서류"), 키 = 칸.getAttribute("data-표시");
+        (상태.수정[이름] = 상태.수정[이름] || {})[키] = 칸.value;
+        칸.classList.add("수정됨");
+        미리보기갱신();
+      });
+    });
+    $("#수정되돌리기").addEventListener("click", function () { 상태.수정 = {}; 확인그리기(); 미리보기갱신(); });
+  }
+
+  // ----- 4단계: 저장 -----
+  function 파일이름(서류이름, 확장자) {
+    var 날짜 = ((상태.결과 && 상태.결과.정보 && (상태.입력.날짜 || 상태.결과.정보.날짜)) || "").replace(/\s+/g, "");
+    return 서류이름 + (날짜 ? "_" + 날짜 : "") + "." + 확장자;
+  }
+  function 내려받기(덩어리, 이름) {
+    var 주소 = URL.createObjectURL(덩어리);
+    var 링크 = document.createElement("a");
+    링크.href = 주소; 링크.download = 이름;
+    document.body.appendChild(링크);
+    링크.click();
+    링크.remove();
+    setTimeout(function () { URL.revokeObjectURL(주소); }, 4000);
+  }
+  async function 한글파일만들기(서류이름, 종류) {
+    return 한글.채우기(상태.양식[서류이름], 최종값들()[서류이름], 종류);
+  }
+  function 저장그리기() {
+    var 칸 = $("#개별받기");
+    칸.innerHTML = "";
+    서류.서류이름.forEach(function (이름) {
+      var 버튼 = document.createElement("button");
+      버튼.textContent = 이름 + " 받기";
+      버튼.addEventListener("click", async function () {
+        try { 내려받기(await 한글파일만들기(이름, "blob"), 파일이름(이름, "hwpx")); 알림(이름 + " 파일을 받았어요. 한글에서 열어 확인해 주세요.", "성공"); }
+        catch (오류) { 알림("파일을 만들 수 없습니다: " + 오류.message, "오류"); }
+      });
+      칸.appendChild(버튼);
+    });
+  }
+  async function 전체받기() {
+    try {
+      var 묶음 = new JSZip();
+      for (var i = 0; i < 서류.서류이름.length; i++) {
+        var 이름 = 서류.서류이름[i];
+        묶음.file(파일이름(이름, "hwpx"), await 한글파일만들기(이름, "uint8array"));
+      }
+      var 덩어리 = await 묶음.generateAsync({ type: "blob" });
+      내려받기(덩어리, "수시위험성평가_서류" + (상태.입력.날짜 ? "_" + 상태.입력.날짜.replace(/\s+/g, "") : "") + ".zip");
+      알림("서류 4개를 ZIP으로 받았어요. 풀어서 한글에서 열어 확인해 주세요.", "성공");
+    } catch (오류) {
+      알림("파일을 만들 수 없습니다: " + 오류.message, "오류");
+    }
+  }
+
+  // ----- 설정 창 -----
+  function 양식설정그리기() {
+    var 칸 = $("#양식설정");
+    칸.innerHTML = "";
+    서류.서류이름.forEach(function (이름) {
+      var 줄 = document.createElement("div");
+      줄.className = "양식줄";
+      var 내양식 = !!상태.양식이름[이름];
+      줄.innerHTML = "<b>" + 이스케이프(이름) + "</b><span>" + (내양식 ? "내 양식: " + 이스케이프(상태.양식이름[이름]) : "기본 연습 양식") + "</span>";
+      var 파일 = document.createElement("input");
+      파일.type = "file"; 파일.accept = ".hwpx"; 파일.style.maxWidth = "220px";
+      파일.addEventListener("change", async function () {
+        if (!파일.files[0]) return;
+        try {
+          var 바이트 = new Uint8Array(await 파일.files[0].arrayBuffer());
+          var 표시 = await 한글.양식표시읽기(바이트);
+          if (!표시.length) throw new Error("양식 안에 {{표시}}가 없습니다. 칸에 {{작업명}} 같은 표시를 넣어 주세요.");
+          상태.양식[이름] = 바이트; 상태.양식이름[이름] = 파일.files[0].name;
+          양식설정그리기(); 미리보기갱신();
+        } catch (오류) {
+          알림("이 양식은 쓸 수 없습니다: " + 오류.message + " (.hwpx 파일인지도 확인하세요)", "오류");
+          파일.value = "";
+        }
+      });
+      줄.appendChild(파일);
+      if (내양식) {
+        var 되돌리기 = document.createElement("button");
+        되돌리기.className = "보조"; 되돌리기.textContent = "기본으로";
+        되돌리기.addEventListener("click", function () { 상태.양식[이름] = window.양식데이터[이름]; delete 상태.양식이름[이름]; 양식설정그리기(); 미리보기갱신(); });
+        줄.appendChild(되돌리기);
+      }
+      칸.appendChild(줄);
+    });
+  }
+  function 설정열기() {
+    document.querySelectorAll('input[name="모드"]').forEach(function (r) { r.checked = r.value === 상태.설정.모드; });
+    $("#키입력").value = 상태.설정.키 || "";
+    $("#모델입력").value = 상태.설정.모델 || AI.기본모델;
+    양식설정그리기();
+    $("#설정창").showModal();
+  }
+  function 설정저장() {
+    var 고른 = document.querySelector('input[name="모드"]:checked');
+    상태.설정.모드 = 고른 ? 고른.value : "연습";
+    상태.설정.키 = $("#키입력").value.trim();
+    상태.설정.모델 = $("#모델입력").value.trim();
+    var 저장됨 = 설정저장하기();
+    모드그리기();
+    $("#설정창").close();
+    if (상태.설정.모드 === "AI" && !상태.설정.키) 알림("AI 모드를 골랐지만 AI 키가 없어요. 설정에서 키를 붙여 넣어 주세요.", "경고");
+    else if (!저장됨) 알림("이 브라우저에서는 설정을 저장할 수 없어요. 창을 닫으면 설정이 사라집니다.", "경고");
+  }
+
+  // ----- 자동 시험 -----
+  var 시험멈춤 = false;
+  function 검사(예시, 결과) {
+    var 이유 = [], 참고 = [];
+    var 빠진 = 규칙.빠진정보찾기(결과.정보);
+    var 위험 = 결과.위험요인 || [];
+    var 형식나쁨 = 위험.some(function (x) { return x.빈도 < 1 || x.빈도 > 4 || x.강도 < 1 || x.강도 > 4 || x.점수 !== x.빈도 * x.강도 || (x.점수 >= 8 && !x.감소대책); });
+    if (예시.종류 === "정상" || 예시.종류 === "위험큼") {
+      if (!결과.고소작업여부) 이유.push("고소작업인데 아니라고 판단함");
+      if (빠진.필수.length) 이유.push("한 줄에 있는 정보를 못 읽음: " + 빠진.필수.join(", "));
+      if (빠진.확인.length) 이유.push("날짜를 확인 질문으로 돌림");
+      if (결과.고소작업여부 && !위험.length) 이유.push("위험요인이 없음");
+    }
+    if (예시.종류 === "위험큼" && !위험.some(function (x) { return x.점수 >= 8 && x.감소대책; })) 이유.push("위험성 8 이상 + 감소대책이 나오지 않음");
+    if (예시.종류 === "정보빠짐" && 빠진.필수.indexOf(예시.빠진칸) < 0) 이유.push("빠진 '" + 예시.빠진칸 + "'을 되묻지 않음");
+    if (예시.종류 === "범위밖" && 결과.고소작업여부) 이유.push("고소작업이 아닌데 서류를 만들려 함");
+    if (예시.종류 === "형식다름") {
+      if (빠진.확인.indexOf("날짜") < 0) 이유.push("'내일'을 읽고 날짜를 확인 질문으로 돌리지 않음");
+      if (결과.정보.총인원 !== 2) 이유.push("'두 명'을 2명으로 읽지 못함");
+    }
+    if (형식나쁨) 이유.push("위험성 점수 형식이 틀림(빈도·강도 1~4, 점수=빈도×강도, 8 이상은 감소대책)");
+    if (결과.고소작업여부 && (예시.종류 === "정상" || 예시.종류 === "위험큼")) {
+      var 모범 = 규칙.연습판단(규칙.한줄읽기(예시.문장), 예시.문장).허가서체크;
+      var 다름 = 0;
+      ["공통", "고소"].forEach(function (구분) {
+        모범[구분].forEach(function (참, i) { if (!!참 !== !!(결과.허가서체크[구분] || [])[i]) 다름++; });
+      });
+      if (다름) 참고.push("허가서 체크가 모범과 다른 항목 " + 다름 + "개");
+    }
+    return { 이유: 이유, 참고: 참고 };
+  }
+  var 쉼 = function (밀리초) { return new Promise(function (풀림) { setTimeout(풀림, 밀리초); }); };
+
+  async function 시험하기() {
+    시험멈춤 = false;
+    $("#시험시작").disabled = true; $("#시험멈춤").disabled = false;
+    var 표 = $("#시험표");
+    표.innerHTML = "<tr><th>번호</th><th>종류</th><th>결과</th><th>내용</th></tr>";
+    var 통과 = 0, 실패 = 0, 참고수 = 0, AI모드 = 상태.설정.모드 === "AI";
+    for (var i = 0; i < window.데이터.예시문장.length; i++) {
+      if (시험멈춤) break;
+      var 예시 = window.데이터.예시문장[i];
+      var 줄 = document.createElement("tr");
+      try {
+        var 결과 = await 판단하기(예시.문장);
+        var 검사결과 = 검사(예시, 결과);
+        if (검사결과.이유.length) { 실패++; 줄.innerHTML = '<td>' + 예시.번호 + "</td><td>" + 예시.종류 + '</td><td class="실패">확인 필요</td><td>' + 이스케이프(검사결과.이유.join(" / ")) + "</td>"; }
+        else if (검사결과.참고.length) { 통과++; 참고수++; 줄.innerHTML = '<td>' + 예시.번호 + "</td><td>" + 예시.종류 + '</td><td class="참고">통과(참고)</td><td>' + 이스케이프(검사결과.참고.join(" / ")) + "</td>"; }
+        else { 통과++; 줄.innerHTML = '<td>' + 예시.번호 + "</td><td>" + 예시.종류 + '</td><td class="통과">통과</td><td>' + 이스케이프(예시.행동) + "</td>"; }
+      } catch (오류) {
+        실패++;
+        줄.innerHTML = '<td>' + 예시.번호 + "</td><td>" + 예시.종류 + '</td><td class="실패">오류</td><td>' + 이스케이프(오류.message) + "</td>";
+        if (AI모드 && /키|사용량|연결/.test(오류.message)) { 표.appendChild(줄); break; }
+      }
+      표.appendChild(줄);
+      $("#시험요약").textContent = (i + 1) + "/" + window.데이터.예시문장.length + " 진행 — 통과 " + 통과 + ", 확인 필요 " + 실패;
+      if (AI모드 && i < window.데이터.예시문장.length - 1) await 쉼(7000); // 무료 사용량 제한을 넘지 않게 천천히
+    }
+    $("#시험요약").textContent = "끝 — 통과 " + 통과 + "건 (그중 참고 " + 참고수 + "건), 확인 필요 " + 실패 + "건" + (시험멈춤 ? " (중간에 멈춤)" : "");
+    $("#시험시작").disabled = false; $("#시험멈춤").disabled = true;
+  }
+  function 시험열기() {
+    var AI모드 = 상태.설정.모드 === "AI";
+    $("#시험안내").textContent = AI모드
+      ? "지금은 AI 모드입니다. 20건을 AI에 보내므로 무료 사용량 제한을 피하려고 건마다 7초씩 쉬어서 2~3분 걸립니다. 보내는 문장은 모두 연습용 가상 문장입니다."
+      : "지금은 연습 모드입니다. 인터넷 없이 바로 끝납니다. (AI 판단을 시험하려면 설정에서 AI 모드를 고르세요.)";
+    $("#시험창").showModal();
+  }
+
+  // ----- 시작 -----
+  function 시작() {
+    설정불러오기();
+    모드그리기();
+    예시채우기();
+    서류카드만들기();
+    미리보기갱신();
+    단계이동(1);
+    $("#분석버튼").addEventListener("click", 분석하기);
+    $("#한줄").addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) 분석하기(); });
+    $("#이전2").addEventListener("click", function () { 단계이동(1); });
+    $("#다음2").addEventListener("click", function () { 단계이동(3); });
+    $("#이전3").addEventListener("click", function () { 단계이동(2); });
+    $("#다음3").addEventListener("click", function () { 단계이동(4); });
+    $("#이전4").addEventListener("click", function () { 단계이동(3); });
+    $("#처음으로").addEventListener("click", function () {
+      상태.결과 = null; 상태.입력 = {}; 상태.수정 = {}; 상태.확인함 = false;
+      $("#한줄").value = ""; $("#예시").value = "";
+      미리보기갱신(); 단계이동(1);
+    });
+    $("#전체받기").addEventListener("click", 전체받기);
+    $("#설정열기").addEventListener("click", 설정열기);
+    $("#설정저장").addEventListener("click", 설정저장);
+    $("#설정닫기").addEventListener("click", function () { $("#설정창").close(); });
+    $("#키지우기").addEventListener("click", function () { 상태.설정.키 = ""; $("#키입력").value = ""; 설정저장하기(); });
+    $("#시험열기").addEventListener("click", 시험열기);
+    $("#시험시작").addEventListener("click", 시험하기);
+    $("#시험멈춤").addEventListener("click", function () { 시험멈춤 = true; });
+    $("#시험닫기").addEventListener("click", function () { 시험멈춤 = true; $("#시험창").close(); });
+    window.__도구 = { 상태: 상태, 최종값들: 최종값들 }; // 점검용
+  }
+  시작();
+})();
+</script>
+</body>
+</html>
