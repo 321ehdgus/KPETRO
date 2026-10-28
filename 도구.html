@@ -233,9 +233,9 @@
     });
   }
 
-  async function 판단하기(글) {
+  async function 판단하기(글, 진행알림) {
     if (상태.설정.모드 === "AI") {
-      return AI.분석(글, { 키: 상태.설정.키, 모델: 상태.설정.모델 });
+      return AI.분석(글, { 키: 상태.설정.키, 모델: 상태.설정.모델 }, { 알림: 진행알림 });
     }
     return 규칙.연습분석(글);
   }
@@ -247,7 +247,7 @@
     버튼.disabled = true;
     $("#분석상태").textContent = 상태.설정.모드 === "AI" ? "AI가 판단하는 중입니다… (몇 초 걸려요)" : "판단하는 중입니다…";
     try {
-      상태.결과 = await 판단하기(글);
+      상태.결과 = await 판단하기(글, function (안내) { $("#분석상태").textContent = 안내; });
       상태.입력 = Object.assign({}, 상태.결과.정보);
       상태.확인함 = false;
       상태.수정 = {};
@@ -531,7 +531,7 @@
       var 예시 = window.데이터.예시문장[i];
       var 줄 = document.createElement("tr");
       try {
-        var 결과 = await 판단하기(예시.문장);
+        var 결과 = await 판단하기(예시.문장, function (안내) { $("#시험요약").textContent = (i + 1) + "번 문장: " + 안내; });
         var 검사결과 = 검사(예시, 결과);
         if (검사결과.이유.length) { 실패++; 줄.innerHTML = '<td>' + 예시.번호 + "</td><td>" + 예시.종류 + '</td><td class="실패">확인 필요</td><td>' + 이스케이프(검사결과.이유.join(" / ")) + "</td>"; }
         else if (검사결과.참고.length) { 통과++; 참고수++; 줄.innerHTML = '<td>' + 예시.번호 + "</td><td>" + 예시.종류 + '</td><td class="참고">통과(참고)</td><td>' + 이스케이프(검사결과.참고.join(" / ")) + "</td>"; }
