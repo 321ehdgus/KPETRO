@@ -94,9 +94,11 @@
 <dialog id="설정창">
   <h2>⚙️ 설정</h2>
   <p class="도움">이 도구는 AI(구글 Gemini)가 작업 내용을 판단합니다. 인터넷과 AI 키가 필요합니다.</p>
-  <div class="주의">입력한 한 줄이 인터넷으로 AI 서비스에 전송됩니다. 무료 AI는 보낸 내용이 서비스 개선에 쓰일 수 있으니, 실제 업무 내용은 기관 보안 규정을 확인한 뒤에만 쓰세요.</div>
-  <label for="키입력">AI 키 (비밀번호처럼 다루고 남에게 보여 주지 마세요. 이 컴퓨터의 브라우저에만 저장됩니다)</label>
+  <div class="주의">입력한 한 줄과 넣은 현장 사진이 인터넷으로 AI 서비스에 전송됩니다. 무료 AI는 보낸 내용이 서비스 개선에 쓰일 수 있으니, 실제 업무 내용은 기관 보안 규정을 확인한 뒤에만 쓰세요.</div>
+  <label for="키입력">AI 키 (비밀번호처럼 다루고 남에게 보여 주지 마세요)</label>
   <input type="password" id="키입력" autocomplete="off" placeholder="구글 AI 스튜디오(aistudio.google.com)에서 만든 키">
+  <label style="margin-top:8px;color:inherit"><input type="checkbox" id="키기억"> 이 컴퓨터에 AI 키 기억하기</label>
+  <p class="도움 작게" style="margin-top:2px">끄면 키를 이 창을 닫을 때까지만 쓰고 저장하지 않아요. <b>여럿이 쓰는 PC라면 꼭 끄세요.</b> 키는 암호화되지 않은 채로 이 브라우저에 저장돼요.</p>
   <label for="모델입력">모델 이름 (모르면 그대로 두세요)</label>
   <input type="text" id="모델입력">
   <h3 class="소제목">📄 서류 양식</h3>
@@ -137,7 +139,7 @@
     수정: {},          // 3단계에서 서류 칸을 직접 고친 값 { 서류이름: { 표시: 값 } }
     양식: {},          // 서류별 양식: base64 글(기본) 또는 Uint8Array(내 양식)
     양식이름: {},      // 내 양식을 골랐을 때 파일 이름
-    설정: { 키: "", 모델: "" },
+    설정: { 키: "", 모델: "", 키기억: true },
     미리번호: 0,
     양식행수: {},      // 서류별 양식에 있는 위험요인 줄 수 (행N_ 표시의 가장 큰 N)
     보낸사진: [],      // 판단할 때 AI에 보낸 사진 (사진 점검 결과와 짝을 맞추려고 따로 둔다)
@@ -155,7 +157,10 @@
     } catch (_) { /* 저장소를 못 쓰면 기본값으로 */ }
   }
   function 설정저장하기() {
-    try { window.localStorage.setItem(저장이름, JSON.stringify(상태.설정)); return true; } catch (_) { return false; }
+    // 키 기억하기를 끄면 키는 빼고 저장한다 (지금 창에서만 쓰고 끝)
+    var 저장할것 = Object.assign({}, 상태.설정);
+    if (!저장할것.키기억) 저장할것.키 = "";
+    try { window.localStorage.setItem(저장이름, JSON.stringify(저장할것)); return true; } catch (_) { return false; }
   }
 
   // ----- 알림 -----
@@ -700,6 +705,7 @@
 
   function 설정열기() {
     $("#키입력").value = 상태.설정.키 || "";
+    $("#키기억").checked = 상태.설정.키기억 !== false;
     $("#모델입력").value = 상태.설정.모델 || AI.기본모델;
     양식설정그리기();
     양식안내쓰기("");
@@ -708,6 +714,7 @@
   }
   function 설정저장() {
     상태.설정.키 = $("#키입력").value.trim();
+    상태.설정.키기억 = $("#키기억").checked;
     상태.설정.모델 = $("#모델입력").value.trim();
     var 저장됨 = 설정저장하기();
     모드그리기();
@@ -724,7 +731,7 @@
     서류.서류이름.forEach(행수세기);
     미리보기갱신();
     단계이동(1);
-    if (!(상태.설정.키 || "").trim()) 알림("처음 한 번, 위쪽 '설정'에서 AI 키를 붙여 넣어 주세요. (키는 이 컴퓨터의 브라우저에만 저장됩니다.)", "경고");
+    if (!(상태.설정.키 || "").trim()) 알림("처음 한 번, 위쪽 '설정'에서 AI 키를 붙여 넣어 주세요. (키를 기억하게 하면 이 컴퓨터의 브라우저에만 저장됩니다.)", "경고");
     $("#분석버튼").addEventListener("click", 분석하기);
     $("#한줄").addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) 분석하기(); });
     $("#이전2").addEventListener("click", function () { 단계이동(1); });
