@@ -55,6 +55,7 @@
 
     <div class="단계칸" id="칸2" hidden>
       <h2>🔎 부족한 정보를 채워 주세요</h2>
+      <div id="사진점검칸"></div>
       <div id="읽은결과"></div>
       <div id="되묻기칸"></div>
       <div class="버튼줄"><button id="이전2">← 이전</button><button id="다음2" class="주요">다음 →</button></div>
@@ -137,6 +138,8 @@
     설정: { 키: "", 모델: "" },
     미리번호: 0,
     양식행수: {},      // 서류별 양식에 있는 위험요인 줄 수 (행N_ 표시의 가장 큰 N)
+    보낸사진: [],      // 판단할 때 AI에 보낸 사진 (사진 점검 결과와 짝을 맞추려고 따로 둔다)
+    사진확인: false,   // 이상한 사진이 있을 때 "그대로 진행"을 골랐는지
     사진들: [],        // 현장 사진 [{ 이름, 종류, 글자(base64), 미리(화면용 주소) }] — AI에만 보내고 저장하지 않음
   };
   서류.서류이름.forEach(function (이름) { 상태.양식[이름] = window.양식데이터[이름]; });
@@ -314,7 +317,10 @@
     버튼.textContent = "AI가 판단하는 중…";
     분석상태쓰기("AI가 작업 내용을 읽고 판단하고 있어요. 보통 5~20초 걸려요.");
     try {
+      var 이번사진 = 상태.사진들.slice();
       상태.결과 = await 판단하기(글, function (안내) { 분석상태쓰기(안내); });
+      상태.보낸사진 = 이번사진;
+      상태.사진확인 = false;
       상태.입력 = Object.assign({}, 상태.결과.정보);
       상태.확인함 = false;
       상태.수정 = {};
@@ -341,10 +347,59 @@
       '<input type="text" id="입력_' + 키 + '" data-키="' + 키 + '" class="' + (빠짐 ? "빠짐" : "") + '" value="' + 이스케이프(상태.입력[키] || "") + '">';
   }
 
+  // ----- 사진 점검 (AI가 사진마다 본 것과 작업에 맞는지) -----
+  var 사진상태글 = {
+    맞음: ["✅", "작업과 맞음", "맞음"],
+    작업과다름: ["⚠️", "작업 내용과 달라 보여요", "이상"],
+    알아보기어려움: ["⚠️", "무엇인지 알아보기 어려워요", "이상"],
+    확인안됨: ["⚠️", "AI가 이 사진을 확인했다는 답이 없어요", "이상"],
+  };
+  function 사진점검목록() {
+    var 점검 = (상태.결과 && 상태.결과.사진점검) || [];
+    return 상태.보낸사진.map(function (사진, i) {
+      var x = 점검.filter(function (c) { return c.번호 === i + 1; })[0];
+      return { 사진: 사진, 번호: i + 1, 상태: x ? x.상태 : "확인안됨", 본것: x ? x.본것 : "", 설명: x ? x.설명 : "" };
+    });
+  }
+  function 이상한사진() { return 사진점검목록().filter(function (x) { return x.상태 !== "맞음"; }); }
+
+  function 사진점검그리기() {
+    var 칸 = $("#사진점검칸");
+    var 목록 = 사진점검목록();
+    if (!목록.length) { 칸.innerHTML = ""; return; }
+    var 이상 = 이상한사진();
+    var 줄들 = 목록.map(function (x) {
+      var 글 = 사진상태글[x.상태] || 사진상태글.확인안됨;
+      return '<div class="사진점검줄 ' + 글[2] + '"><img alt="사진 ' + x.번호 + '" src="' + x.사진.미리 + '">' +
+        '<div><div class="사진점검머리">사진 ' + x.번호 + ' · ' + 글[0] + " " + 글[1] + "</div>" +
+        '<div class="사진본것">AI가 본 것: ' + (x.본것 ? 이스케이프(x.본것) : "<i>(답 없음)</i>") + "</div>" +
+        (x.설명 && x.상태 !== "맞음" ? '<div class="사진설명">' + 이스케이프(x.설명) + "</div>" : "") + "</div></div>";
+    }).join("");
+    var 조각 = ['<div class="사진점검"><p class="도움" style="margin:0 0 6px"><b>📷 현장 사진 점검</b></p>' + 줄들 + "</div>"];
+    if (이상.length) {
+      조각.push('<div class="알림 경고" style="margin-top:8px"><div>사진 ' + 이상.map(function (x) { return x.번호; }).join(", ") +
+        "이(가) 이상해 보여요. 이런 사진은 위험요인 판단에 쓰지 않았어요.<br>사진을 잘못 넣었다면 빼고 다시 판단하세요." +
+        '<div class="버튼줄" style="margin-top:8px"><button type="button" id="사진빼고다시">이상한 사진 빼고 다시 판단</button></div>' +
+        '<label style="margin:8px 0 0;color:inherit"><input type="checkbox" id="사진그대로"' + (상태.사진확인 ? " checked" : "") + "> 확인했어요, 그대로 진행</label></div></div>");
+    }
+    칸.innerHTML = 조각.join("");
+    var 빼기 = $("#사진빼고다시");
+    if (빼기) 빼기.addEventListener("click", function () {
+      var 뺄것 = 이상.map(function (x) { return x.사진; });
+      상태.사진들 = 상태.사진들.filter(function (p) { return 뺄것.indexOf(p) < 0; });
+      사진목록그리기();
+      단계이동(1);
+      분석하기();
+    });
+    var 그대로 = $("#사진그대로");
+    if (그대로) 그대로.addEventListener("change", function () { 상태.사진확인 = 그대로.checked; 다음확인(); });
+  }
+
   function 되묻기그리기() {
     var 결과 = 상태.결과;
     var 정보 = 결과.정보;
     var 읽음 = $("#읽은결과"), 칸 = $("#되묻기칸");
+    사진점검그리기();
     if (!결과.고소작업여부) {
       읽음.innerHTML = "";
       칸.innerHTML = '<div class="알림 경고">이 작업은 <b>' + 이스케이프(결과.범위밖사유 || "고소작업이 아닌 작업") + "</b>이라서, 이번 버전에서는 서류를 만들지 않아요.<br>지원하는 작업: 고소작업(사다리, 비계, 고소작업대, 지붕·외벽 등 높은 곳 작업)</div>" +
@@ -398,7 +453,8 @@
     var 빠진 = 규칙.빠진정보찾기(결과.정보);
     var 필수남음 = 빠진.필수.some(function (키) { return !(상태.입력[키] || "").trim(); });
     var 확인남음 = 빠진.확인.length > 0 && !상태.확인함;
-    $("#다음2").disabled = 필수남음 || 확인남음;
+    var 사진남음 = 이상한사진().length > 0 && !상태.사진확인;
+    $("#다음2").disabled = 필수남음 || 확인남음 || 사진남음;
   }
 
   // ----- 3단계: 서류 확인 -----
@@ -413,6 +469,8 @@
       '<table class="판단표"><tr><th>위험요인</th><th>빈도</th><th>강도</th><th>점수</th><th>근거</th></tr>' + 줄들 + "</table>";
     var 빈칸 = 서류.빈칸목록(값, 결과);
     var 점검 = [];
+    var 무시사진 = 이상한사진();
+    if (무시사진.length) 점검.push('<div class="알림 경고" style="margin:4px 0">사진 ' + 무시사진.map(function (x) { return x.번호; }).join(", ") + "은(는) 작업과 맞지 않거나 알아보기 어려워서 위험요인 판단에 쓰지 않았어요.</div>");
     var 행수 = 상태.양식행수.위험성평가표;
     if (행수 != null && 결과.위험요인.length > 행수) {
       점검.push('<div class="알림 경고" style="margin:4px 0">위험요인이 ' + 결과.위험요인.length + "개인데 지금 위험성평가표 양식에는 줄이 " + 행수 + "줄뿐이라 앞의 " + 행수 + "개만 들어가요. 양식에 줄을 더 만들고 행" + (행수 + 1) + "_ 같은 표시를 넣어 주세요.</div>");
@@ -640,7 +698,7 @@
     $("#사진고르기").addEventListener("click", function () { $("#사진입력").click(); });
     $("#사진입력").addEventListener("change", async function () { await 사진받기(this.files); this.value = ""; });
     $("#처음으로").addEventListener("click", function () {
-      상태.결과 = null; 상태.입력 = {}; 상태.수정 = {}; 상태.확인함 = false; 상태.사진들 = [];
+      상태.결과 = null; 상태.입력 = {}; 상태.수정 = {}; 상태.확인함 = false; 상태.사진들 = []; 상태.보낸사진 = []; 상태.사진확인 = false;
       $("#한줄").value = ""; 분석상태쓰기(""); 사진목록그리기();
       미리보기갱신(); 단계이동(1);
     });

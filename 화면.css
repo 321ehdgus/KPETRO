@@ -207,3 +207,14 @@ code { font-family: "SFMono-Regular", Consolas, "D2Coding", monospace; font-size
 .사진빼기:hover { background: rgba(15, 15, 15, 0.8); }
 .판단표 td.근거 { font-size: 12.5px; color: var(--연한글); white-space: nowrap; text-align: left; }
 
+/* 사진 점검 */
+.사진점검 { background: var(--옆바탕); border-radius: 6px; padding: 10px 12px; margin: 4px 0 8px; }
+.사진점검줄 { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-top: 1px solid var(--선); font-size: 13.5px; }
+.사진점검줄:first-of-type { border-top: none; }
+.사진점검줄 img { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; flex: none; border: 1px solid var(--선); }
+.사진점검머리 { font-weight: 600; }
+.사진점검줄.이상 .사진점검머리 { color: var(--경고); }
+.사진점검줄.맞음 .사진점검머리 { color: var(--성공); }
+.사진본것 { color: var(--연한글); }
+.사진설명 { color: var(--글); margin-top: 2px; }
+

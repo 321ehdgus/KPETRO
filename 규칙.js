@@ -28,6 +28,22 @@
     return "작업내용";
   }
 
+  // 사진점검: [{ 번호, 본것, 상태(맞음/작업과다름/알아보기어려움), 설명 }]
+  function 상태다듬기(글) {
+    글 = String(글 || "").replace(/\s/g, "");
+    if (/다름|관계없|무관|안맞|맞지않|mismatch/i.test(글)) return "작업과다름";
+    if (/어려|흐림|어둡|알수없|불명|unclear|blur/i.test(글)) return "알아보기어려움";
+    if (/맞음|일치|ok|match/i.test(글)) return "맞음";
+    return "알아보기어려움";
+  }
+  function 사진점검다듬기(목록) {
+    if (!Array.isArray(목록)) return [];
+    return 목록.map(function (x, i) {
+      x = x || {};
+      return { 번호: Math.max(1, parseInt(x.번호, 10) || i + 1), 본것: String(x.본것 || ""), 상태: 상태다듬기(x.상태), 설명: String(x.설명 || "") };
+    });
+  }
+
   // AI가 준 결과가 조금 틀려도 서류에 넣을 수 있게 형식을 맞춘다.
   function 결과다듬기(결과) {
     var 경고 = [];
@@ -41,6 +57,7 @@
       승인요청서: Object.assign({ 사전조사: "", 안전대책: "" }, 결과.승인요청서 || {}),
       TBM: Object.assign({ 위험요인: "", 안전대책: "", 교육내용: "" }, 결과.TBM || {}),
       안전중점: 결과.안전중점 || "",
+      사진점검: 사진점검다듬기(결과.사진점검),
       경고: 경고,
     };
     if (!Array.isArray(정리.정보.사용기구)) 정리.정보.사용기구 = String(정리.정보.사용기구 || "").split(/\s*,\s*/).filter(Boolean);
@@ -67,7 +84,7 @@
     return 정리;
   }
 
-  var 규칙 = { 빠진정보찾기: 빠진정보찾기, 결과다듬기: 결과다듬기, 분류찾기: 분류찾기, 근거다듬기: 근거다듬기 };
+  var 규칙 = { 빠진정보찾기: 빠진정보찾기, 결과다듬기: 결과다듬기, 분류찾기: 분류찾기, 근거다듬기: 근거다듬기, 사진점검다듬기: 사진점검다듬기 };
   if (typeof module !== "undefined" && module.exports) module.exports = 규칙;
   else 전역.규칙 = 규칙;
 })(typeof window !== "undefined" ? window : globalThis);
