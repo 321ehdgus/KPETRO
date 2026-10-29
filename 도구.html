@@ -101,6 +101,7 @@
   <h3 class="소제목">📄 서류 양식</h3>
   <p class="도움">기본은 연습용 가상 양식입니다. 내 양식(.hwpx)을 쓰려면 양식 안에 <code>{{작업명}}</code> 같은 표시를 넣은 파일을 고르세요.</p>
   <div id="양식설정"></div>
+  <div id="양식안내" class="알림" hidden aria-live="polite"></div>
   <h3 class="소제목">🏷️ 양식에 넣을 표시 목록</h3>
   <p class="도움">지정 양식을 한글에서 열고, 내용이 들어갈 칸에 아래 표시를 넣은 뒤 <b>HWPX(.hwpx)로 저장</b>하세요. 표시를 누르면 복사됩니다.</p>
   <div id="복사안내" class="도움" aria-live="polite"></div>
@@ -569,6 +570,21 @@
   }
 
   // ----- 설정 창 -----
+  // 설정 창 안에서 양식 관련 안내를 보여 준다 (창 뒤에 가려지지 않게)
+  function 양식안내쓰기(글, 종류) {
+    var 칸 = $("#양식안내");
+    if (!글) { 칸.hidden = true; return; }
+    칸.className = "알림" + (종류 ? " " + 종류 : "");
+    칸.textContent = 글;
+    칸.hidden = false;
+  }
+  function 양식오류글(파일이름, 오류) {
+    var 앞 = "'" + 파일이름 + "'은(는) 쓸 수 없어요. ";
+    if (오류.message === "표시없음") return 앞 + "양식 안에 {{작업명}} 같은 표시가 하나도 없어요. 아래 '양식에 넣을 표시 목록'을 보고 칸마다 표시를 넣은 뒤 다시 골라 주세요.";
+    if (/\.hwp$/i.test(파일이름)) return 앞 + "옛 한글 파일(.hwp)이에요. 한글에서 '다른 이름으로 저장 → 파일 형식: HWPX'로 저장한 뒤 그 .hwpx 파일을 골라 주세요.";
+    return 앞 + "한글 HWPX 파일이 아니거나 파일이 깨져 있어요. 옛 한글 파일(.hwp)을 이름만 바꾼 것이라면, 한글에서 '다른 이름으로 저장 → 파일 형식: HWPX'로 다시 저장해 주세요.";
+  }
+
   function 양식설정그리기() {
     var 칸 = $("#양식설정");
     칸.innerHTML = "";
@@ -578,18 +594,19 @@
       var 내양식 = !!상태.양식이름[이름];
       줄.innerHTML = "<b>" + 이스케이프(이름) + "</b><span>" + (내양식 ? "내 양식: " + 이스케이프(상태.양식이름[이름]) : "기본 연습 양식") + "</span>";
       var 파일 = document.createElement("input");
-      파일.type = "file"; 파일.accept = ".hwpx"; 파일.style.maxWidth = "220px";
+      파일.type = "file"; 파일.accept = ".hwpx,.hwp"; 파일.style.maxWidth = "220px";
       파일.addEventListener("change", async function () {
         if (!파일.files[0]) return;
         try {
           var 바이트 = new Uint8Array(await 파일.files[0].arrayBuffer());
           var 표시 = await 한글.양식표시읽기(바이트);
-          if (!표시.length) throw new Error("양식 안에 {{표시}}가 없습니다. 칸에 {{작업명}} 같은 표시를 넣어 주세요.");
+          if (!표시.length) throw new Error("표시없음");
           상태.양식[이름] = 바이트; 상태.양식이름[이름] = 파일.files[0].name;
           행수세기(이름);
+          양식안내쓰기(이름 + " 양식을 '" + 파일.files[0].name + "'(으)로 바꿨어요. 표시 " + 표시.length + "개를 찾았어요.", "성공");
           양식설정그리기(); 미리보기갱신();
         } catch (오류) {
-          알림("이 양식은 쓸 수 없습니다: " + 오류.message + " (.hwpx 파일인지도 확인하세요)", "오류");
+          양식안내쓰기(양식오류글(파일.files[0] ? 파일.files[0].name : "", 오류), "오류");
           파일.value = "";
         }
       });
@@ -670,6 +687,7 @@
     $("#키입력").value = 상태.설정.키 || "";
     $("#모델입력").value = 상태.설정.모델 || AI.기본모델;
     양식설정그리기();
+    양식안내쓰기("");
     표시목록그리기();
     $("#설정창").showModal();
   }
