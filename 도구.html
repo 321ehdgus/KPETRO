@@ -9,10 +9,9 @@
 <body>
 
 <header class="맨위">
-  <h1>수시 위험성평가 서류 도우미 <small style="font-weight:normal;font-size:13px;color:#5b6b7b">(연습용 · 고소작업)</small></h1>
+  <h1>수시 위험성평가 서류 도우미 <small style="font-weight:normal;font-size:13px;color:#5b6b7b">(고소작업)</small></h1>
   <div class="맨위버튼">
     <span id="모드표시" class="모드"></span>
-    <button id="시험열기" class="보조">연습자료 자동 시험</button>
     <button id="설정열기" class="보조">설정</button>
   </div>
 </header>
@@ -30,12 +29,10 @@
     <!-- 1단계: 한 줄 입력 -->
     <div class="단계칸" id="칸1">
       <h2>1. 작업 내용을 한 줄로 적어 주세요</h2>
-      <p class="도움">날짜, 인원, 장소, 작업 내용, 사용 기구를 한 줄에 적으면 됩니다.<br>연습할 때는 가상 문장만 쓰세요.</p>
+      <p class="도움">날짜, 인원, 장소, 작업 내용, 사용 기구를 한 줄에 적으면 AI가 판단해서 서류를 만듭니다.<br>입력한 내용은 AI 서비스로 전송됩니다. 실제 업무 내용은 기관 보안 규정을 확인한 뒤에 쓰세요.</p>
       <textarea id="한줄" rows="5" placeholder="예) 10월 30일 검사1팀 1명과 검사2팀 1명이 청사 식당에서 사다리를 이용해서 천장 보수작업 진행. 사용기구는 전동드릴 및 사다리"></textarea>
-      <label for="예시">예시 문장 불러오기 (연습자료 20건)</label>
-      <select id="예시"><option value="">직접 적기</option></select>
       <div class="버튼줄"><button id="분석버튼" class="주요">서류 초안 만들기 ▶</button></div>
-      <div id="분석상태" class="도움"></div>
+      <div id="분석상태" class="도움" aria-live="polite"></div>
     </div>
 
     <!-- 2단계: 부족한 정보 -->
@@ -77,10 +74,8 @@
 <!-- 설정 -->
 <dialog id="설정창">
   <h2>설정</h2>
-  <label><b>판단 방식</b></label>
-  <label style="margin:4px 0"><input type="radio" name="모드" value="연습"> 연습 모드 — AI가 아닌 간단한 규칙으로 판단합니다. 인터넷이 필요 없고, 입력한 내용이 밖으로 나가지 않습니다.</label>
-  <label style="margin:4px 0"><input type="radio" name="모드" value="AI"> AI 모드 — 입력한 한 줄을 AI(구글 Gemini)에 보내서 판단합니다. 인터넷과 AI 키가 필요합니다.</label>
-  <div class="주의">AI 모드에서는 입력한 한 줄이 인터넷으로 AI 서비스에 전송됩니다. 무료 AI는 보낸 내용이 서비스 개선에 쓰일 수 있으니, 연습할 때는 가상 문장만 쓰고 실제 업무 내용은 기관 보안 규정을 확인한 뒤에만 쓰세요.</div>
+  <p class="도움">이 도구는 AI(구글 Gemini)가 작업 내용을 판단합니다. 인터넷과 AI 키가 필요합니다.</p>
+  <div class="주의">입력한 한 줄이 인터넷으로 AI 서비스에 전송됩니다. 무료 AI는 보낸 내용이 서비스 개선에 쓰일 수 있으니, 실제 업무 내용은 기관 보안 규정을 확인한 뒤에만 쓰세요.</div>
   <label for="키입력">AI 키 (비밀번호처럼 다루고 남에게 보여 주지 마세요. 이 컴퓨터의 브라우저에만 저장됩니다)</label>
   <input type="password" id="키입력" autocomplete="off" placeholder="구글 AI 스튜디오(aistudio.google.com)에서 만든 키">
   <label for="모델입력">모델 이름 (모르면 그대로 두세요)</label>
@@ -93,16 +88,6 @@
     <button id="설정닫기">닫기</button>
     <button id="키지우기">저장된 AI 키 지우기</button>
   </div>
-</dialog>
-
-<!-- 자동 시험 -->
-<dialog id="시험창">
-  <h2>연습자료 자동 시험</h2>
-  <p class="도움">연습자료 20건을 지금 선택된 방식으로 하나씩 판단해 보고, 기대한 대로 되는지 확인합니다.</p>
-  <div id="시험안내" class="주의"></div>
-  <div class="버튼줄"><button id="시험시작" class="주요">시험 시작</button><button id="시험멈춤" disabled>멈춤</button><button id="시험닫기">닫기</button></div>
-  <div id="시험요약" class="도움"></div>
-  <div style="overflow:auto;max-height:50vh"><table class="시험표" id="시험표"></table></div>
 </dialog>
 
 <script src="라이브러리/jszip.min.js"></script>
@@ -122,13 +107,13 @@
   // ----- 상태 -----
   var 상태 = {
     단계: 1,
-    결과: null,        // 판단 결과 (규칙.js 또는 AI.js가 만든 것)
+    결과: null,        // 판단 결과 (AI.js가 만든 것)
     입력: {},          // 2단계에서 사람이 채운/고친 값
     확인함: false,     // '날짜 맞아요' 확인
     수정: {},          // 3단계에서 서류 칸을 직접 고친 값 { 서류이름: { 표시: 값 } }
     양식: {},          // 서류별 양식: base64 글(기본) 또는 Uint8Array(내 양식)
     양식이름: {},      // 내 양식을 골랐을 때 파일 이름
-    설정: { 모드: "연습", 키: "", 모델: "" },
+    설정: { 키: "", 모델: "" },
     미리번호: 0,
   };
   서류.서류이름.forEach(function (이름) { 상태.양식[이름] = window.양식데이터[이름]; });
@@ -153,12 +138,12 @@
     칸.hidden = false;
   }
 
-  // ----- 모드 표시 -----
+  // ----- 위쪽 AI 상태 표시 -----
   function 모드그리기() {
     var 표시 = $("#모드표시");
-    var AI모드 = 상태.설정.모드 === "AI";
-    표시.textContent = AI모드 ? "AI 모드 (인터넷으로 AI에 보냄)" : "연습 모드 (AI 아님 · 인터넷 불필요)";
-    표시.className = "모드" + (AI모드 ? " ai" : "");
+    var 있음 = !!(상태.설정.키 || "").trim();
+    표시.textContent = 있음 ? "AI로 판단 (구글 Gemini · 인터넷 필요)" : "AI 키가 필요해요 → 설정";
+    표시.className = "모드" + (있음 ? " ai" : " 경고");
   }
 
   // ----- 단계 -----
@@ -218,47 +203,44 @@
   }
 
   // ----- 1단계 -----
-  function 예시채우기() {
-    var 선택 = $("#예시");
-    window.데이터.예시문장.forEach(function (e) {
-      var 옵션 = document.createElement("option");
-      옵션.value = String(e.번호);
-      옵션.textContent = e.번호 + ". [" + e.종류 + "] " + e.문장.slice(0, 40) + (e.문장.length > 40 ? "…" : "");
-      선택.appendChild(옵션);
-    });
-    선택.addEventListener("change", function () {
-      var 번호 = parseInt(선택.value, 10);
-      if (!번호) return;
-      $("#한줄").value = window.데이터.예시문장[번호 - 1].문장;
-    });
+  async function 판단하기(글, 진행알림) {
+    return AI.분석(글, { 키: 상태.설정.키, 모델: 상태.설정.모델 }, { 알림: 진행알림 });
   }
 
-  async function 판단하기(글, 진행알림) {
-    if (상태.설정.모드 === "AI") {
-      return AI.분석(글, { 키: 상태.설정.키, 모델: 상태.설정.모델 }, { 알림: 진행알림 });
-    }
-    return 규칙.연습분석(글);
+  // 분석 상태 줄: 진행 안내(회색 글)나 오류(빨간 상자)를 버튼 바로 아래에 보여 준다.
+  function 분석상태쓰기(글, 오류) {
+    var 칸 = $("#분석상태");
+    칸.className = "도움";
+    if (!글) { 칸.textContent = ""; return; }
+    if (오류) { 칸.className = ""; 칸.innerHTML = '<div class="알림 오류">' + 이스케이프(글) + "</div>"; }
+    else 칸.textContent = 글;
   }
 
   async function 분석하기() {
     var 글 = $("#한줄").value.trim();
-    if (!글) { 알림("작업 내용을 한 줄 적어 주세요.", "경고"); return; }
+    if (!글) { 분석상태쓰기("작업 내용을 한 줄 적어 주세요.", true); return; }
+    if (!(상태.설정.키 || "").trim()) {
+      분석상태쓰기("AI 키가 필요해요. 설정에서 AI 키를 붙여 넣은 뒤 다시 눌러 주세요.", true);
+      설정열기();
+      return;
+    }
     var 버튼 = $("#분석버튼");
     버튼.disabled = true;
-    $("#분석상태").textContent = 상태.설정.모드 === "AI" ? "AI가 판단하는 중입니다… (몇 초 걸려요)" : "판단하는 중입니다…";
+    버튼.textContent = "AI가 판단하는 중…";
+    분석상태쓰기("AI가 작업 내용을 읽고 판단하고 있어요. 보통 5~20초 걸려요.");
     try {
-      상태.결과 = await 판단하기(글, function (안내) { $("#분석상태").textContent = 안내; });
+      상태.결과 = await 판단하기(글, function (안내) { 분석상태쓰기(안내); });
       상태.입력 = Object.assign({}, 상태.결과.정보);
       상태.확인함 = false;
       상태.수정 = {};
-      $("#분석상태").textContent = "";
+      분석상태쓰기("");
       미리보기갱신();
       단계이동(2);
     } catch (오류) {
-      $("#분석상태").textContent = "";
-      알림(오류.message, "오류");
+      분석상태쓰기(오류.message, true);
     } finally {
       버튼.disabled = false;
+      버튼.textContent = "서류 초안 만들기 ▶";
     }
   }
 
@@ -280,7 +262,7 @@
     var 읽음 = $("#읽은결과"), 칸 = $("#되묻기칸");
     if (!결과.고소작업여부) {
       읽음.innerHTML = "";
-      칸.innerHTML = '<div class="알림 경고">이 작업은 <b>' + 이스케이프(결과.범위밖사유 || "고소작업이 아닌 작업") + "</b>이라서, 이번 연습 버전에서는 서류를 만들지 않아요.<br>지원하는 작업: 고소작업(사다리, 비계, 고소작업대, 지붕·외벽 등 높은 곳 작업)</div>" +
+      칸.innerHTML = '<div class="알림 경고">이 작업은 <b>' + 이스케이프(결과.범위밖사유 || "고소작업이 아닌 작업") + "</b>이라서, 이번 버전에서는 서류를 만들지 않아요.<br>지원하는 작업: 고소작업(사다리, 비계, 고소작업대, 지붕·외벽 등 높은 곳 작업)</div>" +
         '<div class="버튼줄"><button id="다른작업">다른 작업 적기</button></div>';
       $("#다른작업").addEventListener("click", function () { 단계이동(1); });
       $("#다음2").disabled = true;
@@ -469,101 +451,29 @@
     });
   }
   function 설정열기() {
-    document.querySelectorAll('input[name="모드"]').forEach(function (r) { r.checked = r.value === 상태.설정.모드; });
     $("#키입력").value = 상태.설정.키 || "";
     $("#모델입력").value = 상태.설정.모델 || AI.기본모델;
     양식설정그리기();
     $("#설정창").showModal();
   }
   function 설정저장() {
-    var 고른 = document.querySelector('input[name="모드"]:checked');
-    상태.설정.모드 = 고른 ? 고른.value : "연습";
     상태.설정.키 = $("#키입력").value.trim();
     상태.설정.모델 = $("#모델입력").value.trim();
     var 저장됨 = 설정저장하기();
     모드그리기();
     $("#설정창").close();
-    if (상태.설정.모드 === "AI" && !상태.설정.키) 알림("AI 모드를 골랐지만 AI 키가 없어요. 설정에서 키를 붙여 넣어 주세요.", "경고");
+    if (!상태.설정.키) 알림("AI 키가 없어요. 설정에서 키를 붙여 넣어 주세요.", "경고");
     else if (!저장됨) 알림("이 브라우저에서는 설정을 저장할 수 없어요. 창을 닫으면 설정이 사라집니다.", "경고");
-  }
-
-  // ----- 자동 시험 -----
-  var 시험멈춤 = false;
-  function 검사(예시, 결과) {
-    var 이유 = [], 참고 = [];
-    var 빠진 = 규칙.빠진정보찾기(결과.정보);
-    var 위험 = 결과.위험요인 || [];
-    var 형식나쁨 = 위험.some(function (x) { return x.빈도 < 1 || x.빈도 > 4 || x.강도 < 1 || x.강도 > 4 || x.점수 !== x.빈도 * x.강도 || (x.점수 >= 8 && !x.감소대책); });
-    if (예시.종류 === "정상" || 예시.종류 === "위험큼") {
-      if (!결과.고소작업여부) 이유.push("고소작업인데 아니라고 판단함");
-      if (빠진.필수.length) 이유.push("한 줄에 있는 정보를 못 읽음: " + 빠진.필수.join(", "));
-      if (빠진.확인.length) 이유.push("날짜를 확인 질문으로 돌림");
-      if (결과.고소작업여부 && !위험.length) 이유.push("위험요인이 없음");
-    }
-    if (예시.종류 === "위험큼" && !위험.some(function (x) { return x.점수 >= 8 && x.감소대책; })) 이유.push("위험성 8 이상 + 감소대책이 나오지 않음");
-    if (예시.종류 === "정보빠짐" && 빠진.필수.indexOf(예시.빠진칸) < 0) 이유.push("빠진 '" + 예시.빠진칸 + "'을 되묻지 않음");
-    if (예시.종류 === "범위밖" && 결과.고소작업여부) 이유.push("고소작업이 아닌데 서류를 만들려 함");
-    if (예시.종류 === "형식다름") {
-      if (빠진.확인.indexOf("날짜") < 0) 이유.push("'내일'을 읽고 날짜를 확인 질문으로 돌리지 않음");
-      if (결과.정보.총인원 !== 2) 이유.push("'두 명'을 2명으로 읽지 못함");
-    }
-    if (형식나쁨) 이유.push("위험성 점수 형식이 틀림(빈도·강도 1~4, 점수=빈도×강도, 8 이상은 감소대책)");
-    if (결과.고소작업여부 && (예시.종류 === "정상" || 예시.종류 === "위험큼")) {
-      var 모범 = 규칙.연습판단(규칙.한줄읽기(예시.문장), 예시.문장).허가서체크;
-      var 다름 = 0;
-      ["공통", "고소"].forEach(function (구분) {
-        모범[구분].forEach(function (참, i) { if (!!참 !== !!(결과.허가서체크[구분] || [])[i]) 다름++; });
-      });
-      if (다름) 참고.push("허가서 체크가 모범과 다른 항목 " + 다름 + "개");
-    }
-    return { 이유: 이유, 참고: 참고 };
-  }
-  var 쉼 = function (밀리초) { return new Promise(function (풀림) { setTimeout(풀림, 밀리초); }); };
-
-  async function 시험하기() {
-    시험멈춤 = false;
-    $("#시험시작").disabled = true; $("#시험멈춤").disabled = false;
-    var 표 = $("#시험표");
-    표.innerHTML = "<tr><th>번호</th><th>종류</th><th>결과</th><th>내용</th></tr>";
-    var 통과 = 0, 실패 = 0, 참고수 = 0, AI모드 = 상태.설정.모드 === "AI";
-    for (var i = 0; i < window.데이터.예시문장.length; i++) {
-      if (시험멈춤) break;
-      var 예시 = window.데이터.예시문장[i];
-      var 줄 = document.createElement("tr");
-      try {
-        var 결과 = await 판단하기(예시.문장, function (안내) { $("#시험요약").textContent = (i + 1) + "번 문장: " + 안내; });
-        var 검사결과 = 검사(예시, 결과);
-        if (검사결과.이유.length) { 실패++; 줄.innerHTML = '<td>' + 예시.번호 + "</td><td>" + 예시.종류 + '</td><td class="실패">확인 필요</td><td>' + 이스케이프(검사결과.이유.join(" / ")) + "</td>"; }
-        else if (검사결과.참고.length) { 통과++; 참고수++; 줄.innerHTML = '<td>' + 예시.번호 + "</td><td>" + 예시.종류 + '</td><td class="참고">통과(참고)</td><td>' + 이스케이프(검사결과.참고.join(" / ")) + "</td>"; }
-        else { 통과++; 줄.innerHTML = '<td>' + 예시.번호 + "</td><td>" + 예시.종류 + '</td><td class="통과">통과</td><td>' + 이스케이프(예시.행동) + "</td>"; }
-      } catch (오류) {
-        실패++;
-        줄.innerHTML = '<td>' + 예시.번호 + "</td><td>" + 예시.종류 + '</td><td class="실패">오류</td><td>' + 이스케이프(오류.message) + "</td>";
-        if (AI모드 && /키|사용량|연결/.test(오류.message)) { 표.appendChild(줄); break; }
-      }
-      표.appendChild(줄);
-      $("#시험요약").textContent = (i + 1) + "/" + window.데이터.예시문장.length + " 진행 — 통과 " + 통과 + ", 확인 필요 " + 실패;
-      if (AI모드 && i < window.데이터.예시문장.length - 1) await 쉼(7000); // 무료 사용량 제한을 넘지 않게 천천히
-    }
-    $("#시험요약").textContent = "끝 — 통과 " + 통과 + "건 (그중 참고 " + 참고수 + "건), 확인 필요 " + 실패 + "건" + (시험멈춤 ? " (중간에 멈춤)" : "");
-    $("#시험시작").disabled = false; $("#시험멈춤").disabled = true;
-  }
-  function 시험열기() {
-    var AI모드 = 상태.설정.모드 === "AI";
-    $("#시험안내").textContent = AI모드
-      ? "지금은 AI 모드입니다. 20건을 AI에 보내므로 무료 사용량 제한을 피하려고 건마다 7초씩 쉬어서 2~3분 걸립니다. 보내는 문장은 모두 연습용 가상 문장입니다."
-      : "지금은 연습 모드입니다. 인터넷 없이 바로 끝납니다. (AI 판단을 시험하려면 설정에서 AI 모드를 고르세요.)";
-    $("#시험창").showModal();
   }
 
   // ----- 시작 -----
   function 시작() {
     설정불러오기();
     모드그리기();
-    예시채우기();
     서류카드만들기();
     미리보기갱신();
     단계이동(1);
+    if (!(상태.설정.키 || "").trim()) 알림("처음 한 번, 위쪽 '설정'에서 AI 키를 붙여 넣어 주세요. (키는 이 컴퓨터의 브라우저에만 저장됩니다.)", "경고");
     $("#분석버튼").addEventListener("click", 분석하기);
     $("#한줄").addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) 분석하기(); });
     $("#이전2").addEventListener("click", function () { 단계이동(1); });
@@ -573,18 +483,14 @@
     $("#이전4").addEventListener("click", function () { 단계이동(3); });
     $("#처음으로").addEventListener("click", function () {
       상태.결과 = null; 상태.입력 = {}; 상태.수정 = {}; 상태.확인함 = false;
-      $("#한줄").value = ""; $("#예시").value = "";
+      $("#한줄").value = ""; 분석상태쓰기("");
       미리보기갱신(); 단계이동(1);
     });
     $("#전체받기").addEventListener("click", 전체받기);
     $("#설정열기").addEventListener("click", 설정열기);
     $("#설정저장").addEventListener("click", 설정저장);
     $("#설정닫기").addEventListener("click", function () { $("#설정창").close(); });
-    $("#키지우기").addEventListener("click", function () { 상태.설정.키 = ""; $("#키입력").value = ""; 설정저장하기(); });
-    $("#시험열기").addEventListener("click", 시험열기);
-    $("#시험시작").addEventListener("click", 시험하기);
-    $("#시험멈춤").addEventListener("click", function () { 시험멈춤 = true; });
-    $("#시험닫기").addEventListener("click", function () { 시험멈춤 = true; $("#시험창").close(); });
+    $("#키지우기").addEventListener("click", function () { 상태.설정.키 = ""; $("#키입력").value = ""; 설정저장하기(); 모드그리기(); });
     window.__도구 = { 상태: 상태, 최종값들: 최종값들 }; // 점검용
   }
   시작();

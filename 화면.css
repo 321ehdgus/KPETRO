@@ -35,6 +35,7 @@ body {
 .맨위버튼 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .모드 { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: #e8f0fe; color: var(--주색진); }
 .모드.ai { background: #e6f4ea; color: var(--성공); }
+.모드.경고 { background: var(--경고바탕); color: var(--경고); }
 
 /* 단계 표시 줄 */
 .단계줄 { display: flex; gap: 6px; list-style: none; margin: 0; padding: 12px 20px; background: var(--카드); border-bottom: 1px solid var(--선); overflow-x: auto; }
