@@ -83,6 +83,10 @@
   <h2 style="margin-top:18px;font-size:16px">서류 양식</h2>
   <p class="도움">기본은 연습용 가상 양식입니다. 내 양식(.hwpx)을 쓰려면 양식 안에 <code>{{작업명}}</code> 같은 표시를 넣은 파일을 고르세요.</p>
   <div id="양식설정"></div>
+  <h2 style="margin-top:18px;font-size:16px">양식에 넣을 표시 목록</h2>
+  <p class="도움">지정 양식을 한글에서 열고, 내용이 들어갈 칸에 아래 표시를 넣은 뒤 <b>HWPX(.hwpx)로 저장</b>하세요. 표시를 누르면 복사됩니다.</p>
+  <div id="복사안내" class="도움" aria-live="polite"></div>
+  <div id="표시목록"></div>
   <div class="버튼줄">
     <button id="설정저장" class="주요">저장</button>
     <button id="설정닫기">닫기</button>
@@ -115,6 +119,7 @@
     양식이름: {},      // 내 양식을 골랐을 때 파일 이름
     설정: { 키: "", 모델: "" },
     미리번호: 0,
+    양식행수: {},      // 서류별 양식에 있는 위험요인 줄 수 (행N_ 표시의 가장 큰 N)
   };
   서류.서류이름.forEach(function (이름) { 상태.양식[이름] = window.양식데이터[이름]; });
 
@@ -327,6 +332,10 @@
       '<table class="판단표"><tr><th>위험요인</th><th>빈도</th><th>강도</th><th>점수</th></tr>' + 줄들 + "</table>";
     var 빈칸 = 서류.빈칸목록(값, 결과);
     var 점검 = [];
+    var 행수 = 상태.양식행수.위험성평가표;
+    if (행수 != null && 결과.위험요인.length > 행수) {
+      점검.push('<div class="알림 경고" style="margin:4px 0">위험요인이 ' + 결과.위험요인.length + "개인데 지금 위험성평가표 양식에는 줄이 " + 행수 + "줄뿐이라 앞의 " + 행수 + "개만 들어가요. 양식에 줄을 더 만들고 행" + (행수 + 1) + "_ 같은 표시를 넣어 주세요.</div>");
+    }
     (값.경고 || []).forEach(function (글) { 점검.push('<div class="알림 경고" style="margin:4px 0">' + 이스케이프(글) + "</div>"); });
     if (빈칸.length) {
       점검.push('<div class="알림 경고" style="margin:4px 0">도구가 채우지 못한 칸이 ' + 빈칸.length + "개 있어요: " + 이스케이프(빈칸.slice(0, 8).map(function (x) { return x.서류 + "의 " + x.키; }).join(", ")) + (빈칸.length > 8 ? " …" : "") + "<br>(서명, 승인번호처럼 사람이 직접 쓰는 칸은 세지 않았어요.)</div>");
@@ -434,6 +443,7 @@
           var 표시 = await 한글.양식표시읽기(바이트);
           if (!표시.length) throw new Error("양식 안에 {{표시}}가 없습니다. 칸에 {{작업명}} 같은 표시를 넣어 주세요.");
           상태.양식[이름] = 바이트; 상태.양식이름[이름] = 파일.files[0].name;
+          행수세기(이름);
           양식설정그리기(); 미리보기갱신();
         } catch (오류) {
           알림("이 양식은 쓸 수 없습니다: " + 오류.message + " (.hwpx 파일인지도 확인하세요)", "오류");
@@ -444,16 +454,80 @@
       if (내양식) {
         var 되돌리기 = document.createElement("button");
         되돌리기.className = "보조"; 되돌리기.textContent = "기본으로";
-        되돌리기.addEventListener("click", function () { 상태.양식[이름] = window.양식데이터[이름]; delete 상태.양식이름[이름]; 양식설정그리기(); 미리보기갱신(); });
+        되돌리기.addEventListener("click", function () { 상태.양식[이름] = window.양식데이터[이름]; delete 상태.양식이름[이름]; 행수세기(이름); 양식설정그리기(); 미리보기갱신(); });
         줄.appendChild(되돌리기);
       }
       칸.appendChild(줄);
     });
   }
+  // ----- 양식의 위험요인 줄 수 세기 -----
+  async function 행수세기(이름) {
+    try {
+      var 표시 = await 한글.양식표시읽기(상태.양식[이름]);
+      var 큰수 = 0;
+      표시.forEach(function (k) { var m = k.match(/^행(\d+)_/); if (m) 큰수 = Math.max(큰수, parseInt(m[1], 10)); });
+      상태.양식행수[이름] = 큰수;
+    } catch (_) { delete 상태.양식행수[이름]; }
+  }
+
+  // ----- 표시 목록 (누르면 복사) -----
+  async function 복사하기(글) {
+    var 됨 = false;
+    try { await navigator.clipboard.writeText(글); 됨 = true; } catch (_) { /* 아래 방법으로 */ }
+    if (!됨) {
+      var 임시 = document.createElement("textarea");
+      임시.value = 글; 임시.style.position = "fixed"; 임시.style.opacity = "0";
+      document.body.appendChild(임시); 임시.select();
+      try { 됨 = document.execCommand("copy"); } catch (_) { 됨 = false; }
+      임시.remove();
+    }
+    $("#복사안내").textContent = 됨 ? "복사했어요: " + (글.length > 40 ? 글.slice(0, 40) + "…" : 글) : "복사하지 못했어요. 표시를 직접 보고 적어 주세요.";
+  }
+  function 표시칩(키) {
+    return '<button type="button" class="표시칩" data-복사="' + 이스케이프("{{" + 키 + "}}") + '">{{' + 이스케이프(키) + "}}</button>";
+  }
+  function 표시목록그리기() {
+    var 조각 = [];
+    서류.서류이름.forEach(function (이름) {
+      var 줄들 = [], 전체 = [];
+      서류.표시설명[이름].forEach(function (쌍) {
+        var 범위 = 쌍[0].match(/^(공통|고소)1~\1(\d+)$/);
+        if (범위) {
+          var 항목 = window.데이터.허가서항목[범위[1]] || [];
+          for (var i = 1; i <= parseInt(범위[2], 10); i++) {
+            var 키 = 범위[1] + i;
+            전체.push("{{" + 키 + "}}");
+            줄들.push("<tr><td>" + 표시칩(키) + "</td><td>" + 이스케이프((범위[1] === "공통" ? "공통 " : "고소 ") + i + ". " + ((항목[i - 1] || {}).항목 || "") + " 체크 칸") + "</td></tr>");
+          }
+        } else {
+          전체.push("{{" + 쌍[0] + "}}");
+          줄들.push("<tr><td>" + 표시칩(쌍[0]) + "</td><td>" + 이스케이프(쌍[1]) + "</td></tr>");
+        }
+      });
+      if (이름 === "위험성평가표") {
+        전체 = [];
+        for (var n = 1; n <= 서류.위험성평가_행수; n++) {
+          전체.push(서류.표시설명.위험성평가표.map(function (쌍) { return "{{" + 쌍[0].replace(/^행1_/, "행" + n + "_") + "}}"; }).join("\t"));
+        }
+      }
+      조각.push("<details><summary>" + 이스케이프(이름) + "</summary>" +
+        (서류.표시안내[이름] ? '<p class="도움">' + 이스케이프(서류.표시안내[이름]) + "</p>" : "") +
+        '<table class="표시표">' + 줄들.join("") + "</table>" +
+        '<div class="버튼줄"><button type="button" class="보조" data-복사="' + 이스케이프(전체.join("\n")) + '">이 서류 표시 모두 복사' + (이름 === "위험성평가표" ? " (행1~행" + 서류.위험성평가_행수 + ")" : "") + "</button></div></details>");
+    });
+    var 칸 = $("#표시목록");
+    칸.innerHTML = 조각.join("");
+    칸.querySelectorAll("[data-복사]").forEach(function (버튼) {
+      버튼.addEventListener("click", function () { 복사하기(버튼.getAttribute("data-복사")); });
+    });
+    $("#복사안내").textContent = "";
+  }
+
   function 설정열기() {
     $("#키입력").value = 상태.설정.키 || "";
     $("#모델입력").value = 상태.설정.모델 || AI.기본모델;
     양식설정그리기();
+    표시목록그리기();
     $("#설정창").showModal();
   }
   function 설정저장() {
@@ -471,6 +545,7 @@
     설정불러오기();
     모드그리기();
     서류카드만들기();
+    서류.서류이름.forEach(행수세기);
     미리보기갱신();
     단계이동(1);
     if (!(상태.설정.키 || "").trim()) 알림("처음 한 번, 위쪽 '설정'에서 AI 키를 붙여 넣어 주세요. (키는 이 컴퓨터의 브라우저에만 저장됩니다.)", "경고");

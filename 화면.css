@@ -115,3 +115,8 @@ dialog h2 { margin-top: 0; }
 .시험표 td.실패 { color: var(--오류); font-weight: bold; }
 .시험표 td.참고 { color: var(--경고); font-weight: bold; }
 .주의 { font-size: 13px; color: var(--경고); background: var(--경고바탕); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
+.표시표 { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0; }
+.표시표 td { border: 1px solid var(--선); padding: 3px 6px; vertical-align: top; }
+.표시표 td:first-child { width: 1%; white-space: nowrap; }
+.표시칩 { font-family: Consolas, "D2Coding", monospace; font-size: 13px; padding: 2px 8px; border-radius: 6px; background: #eef4ff; border-color: #c9dafc; color: var(--주색진); }
+.표시칩:hover { background: #dce8ff; }
