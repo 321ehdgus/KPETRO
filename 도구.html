@@ -40,6 +40,12 @@
       <h2>✍️ 작업 내용을 한 줄로 적어 주세요</h2>
       <p class="도움">날짜, 인원, 장소, 작업 내용, 사용 기구를 한 줄에 적으면 AI가 판단해서 서류를 만듭니다.<br>입력한 내용은 AI 서비스로 전송됩니다. 실제 업무 내용은 기관 보안 규정을 확인한 뒤에 쓰세요.</p>
       <textarea id="한줄" rows="5" placeholder="예) 10월 30일 검사1팀 1명과 검사2팀 1명이 청사 식당에서 사다리를 이용해서 천장 보수작업 진행. 사용기구는 전동드릴 및 사다리"></textarea>
+      <div class="사진칸">
+        <input type="file" id="사진입력" accept="image/*" multiple hidden>
+        <button type="button" id="사진고르기">📷 현장 사진 넣기 <span class="연함">(선택, 최대 3장)</span></button>
+        <div id="사진목록" class="사진목록"></div>
+        <p class="도움 작게">사진도 AI 서비스로 전송됩니다. 사람 얼굴, 기관 이름이 보이는 간판·문서, 차량 번호가 찍힌 사진은 넣지 마세요.</p>
+      </div>
       <div class="버튼줄"><button id="분석버튼" class="주요">서류 초안 만들기 →</button></div>
       <div id="분석상태" class="도움" aria-live="polite"></div>
     </div>
@@ -131,6 +137,7 @@
     설정: { 키: "", 모델: "" },
     미리번호: 0,
     양식행수: {},      // 서류별 양식에 있는 위험요인 줄 수 (행N_ 표시의 가장 큰 N)
+    사진들: [],        // 현장 사진 [{ 이름, 종류, 글자(base64), 미리(화면용 주소) }] — AI에만 보내고 저장하지 않음
   };
   서류.서류이름.forEach(function (이름) { 상태.양식[이름] = window.양식데이터[이름]; });
 
@@ -174,7 +181,7 @@
     var 요약 = $("#입력요약");
     var 원문 = $("#한줄").value.trim();
     요약.hidden = 번호 === 1 || !원문;
-    if (!요약.hidden) 요약.innerHTML = "<b>입력한 한 줄</b><br>" + 이스케이프(원문);
+    if (!요약.hidden) 요약.innerHTML = "<b>입력한 한 줄" + (상태.사진들.length ? " · 📷 사진 " + 상태.사진들.length + "장" : "") + "</b><br>" + 이스케이프(원문);
     if (번호 === 2) 되묻기그리기();
     if (번호 === 3) 확인그리기();
     if (번호 === 4) 저장그리기();
@@ -223,8 +230,66 @@
   }
 
   // ----- 1단계 -----
+  // ----- 현장 사진 (선택, 최대 3장) -----
+  var 사진최대 = 3, 사진긴변 = 1280;
+  // 사진을 긴 변 1280px 이하 JPG로 줄인다 (빨리 보내고, 무료 사용량을 아끼려고)
+  function 사진줄이기(파일) {
+    return new Promise(function (풀림, 실패) {
+      var 주소 = URL.createObjectURL(파일);
+      var 그림 = new Image();
+      그림.onload = function () {
+        var 배율 = Math.min(1, 사진긴변 / Math.max(그림.naturalWidth, 그림.naturalHeight));
+        var 판 = document.createElement("canvas");
+        판.width = Math.max(1, Math.round(그림.naturalWidth * 배율));
+        판.height = Math.max(1, Math.round(그림.naturalHeight * 배율));
+        var 붓 = 판.getContext("2d");
+        붓.fillStyle = "#fff"; 붓.fillRect(0, 0, 판.width, 판.height);
+        붓.drawImage(그림, 0, 0, 판.width, 판.height);
+        URL.revokeObjectURL(주소);
+        var 데이터주소 = 판.toDataURL("image/jpeg", 0.82);
+        풀림({ 이름: 파일.name, 종류: "image/jpeg", 글자: 데이터주소.split(",")[1], 미리: 데이터주소 });
+      };
+      그림.onerror = function () { URL.revokeObjectURL(주소); 실패(new Error("'" + 파일.name + "' 사진을 열 수 없어요. JPG나 PNG 사진으로 바꿔서 넣어 주세요. (아이폰 HEIC 사진은 안 열릴 수 있어요)")); };
+      그림.src = 주소;
+    });
+  }
+  function 사진목록그리기() {
+    var 칸 = $("#사진목록");
+    칸.innerHTML = "";
+    상태.사진들.forEach(function (p, i) {
+      var 조각 = document.createElement("div");
+      조각.className = "사진조각";
+      조각.innerHTML = '<img alt="현장 사진 ' + (i + 1) + '" src="' + p.미리 + '"><button type="button" class="사진빼기" title="이 사진 빼기" aria-label="사진 빼기">×</button>';
+      조각.querySelector("button").addEventListener("click", function () { 상태.사진들.splice(i, 1); 사진목록그리기(); });
+      칸.appendChild(조각);
+    });
+    var 버튼 = $("#사진고르기");
+    버튼.disabled = 상태.사진들.length >= 사진최대;
+    버튼.querySelector(".연함").textContent = 상태.사진들.length ? "(" + 상태.사진들.length + "/" + 사진최대 + "장)" : "(선택, 최대 3장)";
+  }
+  async function 사진받기(파일들) {
+    var 안내 = [];
+    // 먼저 사진이 아닌 파일, 너무 큰 파일을 걸러 낸 뒤에 장수를 센다
+    var 목록 = Array.prototype.slice.call(파일들).filter(function (파일) {
+      if (!/^image\//.test(파일.type) && !/\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(파일.name)) { 안내.push("'" + 파일.name + "'은 사진 파일이 아니에요."); return false; }
+      if (파일.size > 25 * 1024 * 1024) { 안내.push("'" + 파일.name + "'은 너무 커요(25MB 넘음)."); return false; }
+      return true;
+    });
+    var 남은자리 = Math.max(0, 사진최대 - 상태.사진들.length);
+    if (목록.length > 남은자리) 안내.push("사진은 최대 " + 사진최대 + "장까지예요. " + (남은자리 ? "앞의 " + 남은자리 + "장만 넣었어요." : "더 넣으려면 있는 사진을 빼 주세요."));
+    목록 = 목록.slice(0, 남은자리);
+    for (var i = 0; i < 목록.length; i++) {
+      try { 상태.사진들.push(await 사진줄이기(목록[i])); } catch (오류) { 안내.push(오류.message); }
+    }
+    사진목록그리기();
+    분석상태쓰기(안내.join(" "), 안내.length > 0);
+  }
+
   async function 판단하기(글, 진행알림) {
-    return AI.분석(글, { 키: 상태.설정.키, 모델: 상태.설정.모델 }, { 알림: 진행알림 });
+    return AI.분석(글, { 키: 상태.설정.키, 모델: 상태.설정.모델 }, {
+      알림: 진행알림,
+      사진들: 상태.사진들.map(function (p) { return { 종류: p.종류, 글자: p.글자 }; }),
+    });
   }
 
   // 분석 상태 줄: 진행 안내(회색 글)나 오류(빨간 상자)를 버튼 바로 아래에 보여 준다.
@@ -341,10 +406,11 @@
     var 결과 = 상태.결과;
     var 값 = 최종값들();
     var 줄들 = 결과.위험요인.map(function (x) {
-      return '<tr class="' + (x.점수 >= 8 ? "높음" : "") + '"><td>' + 이스케이프(x.위험요인) + '</td><td class="숫자">' + x.빈도 + '</td><td class="숫자">' + x.강도 + '</td><td class="숫자">' + x.점수 + "</td></tr>";
+      var 근거 = { 작업내용: "📝 작업 내용", 사진: "📷 사진", 둘다: "📝+📷 둘 다" }[x.근거] || "📝 작업 내용";
+      return '<tr class="' + (x.점수 >= 8 ? "높음" : "") + '"><td>' + 이스케이프(x.위험요인) + '</td><td class="숫자">' + x.빈도 + '</td><td class="숫자">' + x.강도 + '</td><td class="숫자">' + x.점수 + '</td><td class="근거">' + 근거 + "</td></tr>";
     }).join("");
     $("#판단요약").innerHTML = '<p class="도움" style="margin-bottom:2px"><b>찾아낸 위험요인</b> (점수 = 빈도 × 강도, 8 이상은 감소대책 필요)</p>' +
-      '<table class="판단표"><tr><th>위험요인</th><th>빈도</th><th>강도</th><th>점수</th></tr>' + 줄들 + "</table>";
+      '<table class="판단표"><tr><th>위험요인</th><th>빈도</th><th>강도</th><th>점수</th><th>근거</th></tr>' + 줄들 + "</table>";
     var 빈칸 = 서류.빈칸목록(값, 결과);
     var 점검 = [];
     var 행수 = 상태.양식행수.위험성평가표;
@@ -571,9 +637,11 @@
     $("#이전3").addEventListener("click", function () { 단계이동(2); });
     $("#다음3").addEventListener("click", function () { 단계이동(4); });
     $("#이전4").addEventListener("click", function () { 단계이동(3); });
+    $("#사진고르기").addEventListener("click", function () { $("#사진입력").click(); });
+    $("#사진입력").addEventListener("change", async function () { await 사진받기(this.files); this.value = ""; });
     $("#처음으로").addEventListener("click", function () {
-      상태.결과 = null; 상태.입력 = {}; 상태.수정 = {}; 상태.확인함 = false;
-      $("#한줄").value = ""; 분석상태쓰기("");
+      상태.결과 = null; 상태.입력 = {}; 상태.수정 = {}; 상태.확인함 = false; 상태.사진들 = [];
+      $("#한줄").value = ""; 분석상태쓰기(""); 사진목록그리기();
       미리보기갱신(); 단계이동(1);
     });
     $("#전체받기").addEventListener("click", 전체받기);

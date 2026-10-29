@@ -194,3 +194,16 @@ code { font-family: "SFMono-Regular", Consolas, "D2Coding", monospace; font-size
 .표시칩 { font-family: "SFMono-Regular", Consolas, "D2Coding", monospace; font-size: 12.5px; padding: 1px 7px; border-radius: 4px;
   background: rgba(135, 131, 120, 0.15); border: none; color: #eb5757; }
 .표시칩:hover { background: rgba(135, 131, 120, 0.28); }
+
+/* 현장 사진 넣기 */
+.사진칸 { margin-top: 10px; }
+.사진칸 .연함 { color: var(--연한글); font-size: 13px; }
+.도움.작게 { font-size: 12.5px; margin-top: 6px; }
+.사진목록 { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.사진목록:empty { display: none; }
+.사진조각 { position: relative; width: 84px; height: 84px; border-radius: 6px; overflow: hidden; border: 1px solid var(--선); background: var(--옆바탕); }
+.사진조각 img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.사진빼기 { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border-radius: 50%; border: none; background: rgba(15, 15, 15, 0.6); color: #fff; font-size: 14px; line-height: 22px; }
+.사진빼기:hover { background: rgba(15, 15, 15, 0.8); }
+.판단표 td.근거 { font-size: 12.5px; color: var(--연한글); white-space: nowrap; text-align: left; }
+
