@@ -466,7 +466,11 @@
       return '<tr class="' + (x.점수 >= 8 ? "높음" : "") + '"><td>' + 이스케이프(x.위험요인) + '</td><td class="숫자">' + x.빈도 + '</td><td class="숫자">' + x.강도 + '</td><td class="숫자">' + x.점수 + '</td><td class="근거">' + 근거 + "</td></tr>";
     }).join("");
     $("#판단요약").innerHTML = '<p class="도움" style="margin-bottom:2px"><b>찾아낸 위험요인</b> (점수 = 빈도 × 강도, 8 이상은 감소대책 필요)</p>' +
-      '<table class="판단표"><tr><th>위험요인</th><th>빈도</th><th>강도</th><th>점수</th><th>근거</th></tr>' + 줄들 + "</table>";
+      (결과.위험요인.length
+        ? '<table class="판단표"><tr><th>위험요인</th><th>빈도</th><th>강도</th><th>점수</th><th>근거</th></tr>' + 줄들 + "</table>"
+        : '<div class="알림 경고" style="margin:4px 0 10px"><div>위험요인을 하나도 찾지 못했어요. 이대로면 위험성평가표가 비어요.<div class="버튼줄" style="margin-top:8px"><button type="button" id="다시판단">다시 판단</button></div></div></div>');
+    var 다시 = $("#다시판단");
+    if (다시) 다시.addEventListener("click", function () { 단계이동(1); 분석하기(); });
     var 빈칸 = 서류.빈칸목록(값, 결과);
     var 점검 = [];
     var 무시사진 = 이상한사진();
