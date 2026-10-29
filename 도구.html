@@ -40,6 +40,7 @@
       <h2>✍️ 작업 내용을 한 줄로 적어 주세요</h2>
       <p class="도움">날짜, 인원, 장소, 작업 내용, 사용 기구를 한 줄에 적으면 AI가 판단해서 서류를 만듭니다.<br>입력한 내용은 AI 서비스로 전송됩니다. 실제 업무 내용은 기관 보안 규정을 확인한 뒤에 쓰세요.</p>
       <textarea id="한줄" rows="5" placeholder="예) 10월 30일 검사1팀 1명과 검사2팀 1명이 청사 식당에서 사다리를 이용해서 천장 보수작업 진행. 사용기구는 전동드릴 및 사다리"></textarea>
+      <div id="글자수" class="글자수">0 / 500자</div>
       <div class="사진칸">
         <input type="file" id="사진입력" accept="image/*" multiple hidden>
         <button type="button" id="사진고르기">📷 현장 사진 넣기 <span class="연함">(선택, 최대 3장)</span></button>
@@ -140,7 +141,8 @@
     미리번호: 0,
     양식행수: {},      // 서류별 양식에 있는 위험요인 줄 수 (행N_ 표시의 가장 큰 N)
     보낸사진: [],      // 판단할 때 AI에 보낸 사진 (사진 점검 결과와 짝을 맞추려고 따로 둔다)
-    사진확인: false,   // 이상한 사진이 있을 때 "그대로 진행"을 골랐는지
+    사진확인: false,
+    긴글확인: "",     // 500자 넘는 글을 "그래도 보내기"로 확인한 글   // 이상한 사진이 있을 때 "그대로 진행"을 골랐는지
     사진들: [],        // 현장 사진 [{ 이름, 종류, 글자(base64), 미리(화면용 주소) }] — AI에만 보내고 저장하지 않음
   };
   서류.서류이름.forEach(function (이름) { 상태.양식[이름] = window.양식데이터[이름]; });
@@ -305,9 +307,22 @@
     else 칸.textContent = 글;
   }
 
+  var 글권장 = 500, 글최대 = 1000;
+  function 글자수그리기() {
+    var 수 = $("#한줄").value.trim().length, 칸 = $("#글자수");
+    칸.textContent = 수 + " / " + 글권장 + "자" + (수 > 글최대 ? " — 너무 길어요" : 수 > 글권장 ? " — 길어요" : "");
+    칸.className = "글자수" + (수 > 글최대 ? " 넘침" : 수 > 글권장 ? " 김" : "");
+  }
+
   async function 분석하기() {
     var 글 = $("#한줄").value.trim();
     if (!글) { 분석상태쓰기("작업 내용을 한 줄 적어 주세요.", true); return; }
+    if (글.length > 글최대) { 분석상태쓰기("글이 너무 길어요(" + 글.length + "자). 작업 내용을 " + 글최대.toLocaleString() + "자 이하로 줄여 주세요. 날짜·인원·장소·작업·기구만 적으면 충분해요.", true); return; }
+    if (글.length > 글권장 && 상태.긴글확인 !== 글) {
+      상태.긴글확인 = 글;
+      분석상태쓰기("글이 길어요(" + 글.length + "자). " + 글권장 + "자 이하의 한 줄로 줄이면 더 정확하고 빨라요. 그래도 이대로 보내려면 '서류 초안 만들기'를 한 번 더 눌러 주세요.", true);
+      return;
+    }
     if (!(상태.설정.키 || "").trim()) {
       분석상태쓰기("AI 키가 필요해요. 설정에서 AI 키를 붙여 넣은 뒤 다시 눌러 주세요.", true);
       설정열기();
@@ -717,11 +732,12 @@
     $("#이전3").addEventListener("click", function () { 단계이동(2); });
     $("#다음3").addEventListener("click", function () { 단계이동(4); });
     $("#이전4").addEventListener("click", function () { 단계이동(3); });
+    $("#한줄").addEventListener("input", 글자수그리기);
     $("#사진고르기").addEventListener("click", function () { $("#사진입력").click(); });
     $("#사진입력").addEventListener("change", async function () { await 사진받기(this.files); this.value = ""; });
     $("#처음으로").addEventListener("click", function () {
       상태.결과 = null; 상태.입력 = {}; 상태.수정 = {}; 상태.확인함 = false; 상태.사진들 = []; 상태.보낸사진 = []; 상태.사진확인 = false;
-      $("#한줄").value = ""; 분석상태쓰기(""); 사진목록그리기();
+      $("#한줄").value = ""; 분석상태쓰기(""); 사진목록그리기(); 글자수그리기(); 상태.긴글확인 = "";
       미리보기갱신(); 단계이동(1);
     });
     $("#전체받기").addEventListener("click", 전체받기);
