@@ -120,3 +120,4 @@ dialog h2 { margin-top: 0; }
 .표시표 td:first-child { width: 1%; white-space: nowrap; }
 .표시칩 { font-family: Consolas, "D2Coding", monospace; font-size: 13px; padding: 2px 8px; border-radius: 6px; background: #eef4ff; border-color: #c9dafc; color: var(--주색진); }
 .표시칩:hover { background: #dce8ff; }
+.입력요약 { font-size: 14px; background: #eef4ff; border: 1px solid #c9dafc; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
