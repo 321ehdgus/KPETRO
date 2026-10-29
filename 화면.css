@@ -1,123 +1,196 @@
-/* 화면.css - 도구.html의 글씨, 색, 배치 */
+/* 화면.css - 도구.html의 글씨, 색, 배치 (노션 느낌: 흰 바탕, 따뜻한 회색, 얇은 선, 이모지 머리) */
 :root {
-  --바탕: #f4f6f8;
-  --카드: #ffffff;
-  --글: #1d2733;
-  --연한글: #5b6b7b;
-  --선: #d5dce3;
-  --주색: #1f6feb;
-  --주색진: #1558c0;
-  --성공: #1a7f37;
-  --경고: #b54708;
-  --경고바탕: #fff4e5;
-  --오류: #c62828;
-  --오류바탕: #fdecea;
-  --빈칸: #fff3bf;
-  --서류선: #8a97a5;
+  --바탕: #ffffff;
+  --옆바탕: #f7f7f5;
+  --글: #37352f;
+  --연한글: rgba(55, 53, 47, 0.65);
+  --더연한글: rgba(55, 53, 47, 0.45);
+  --선: rgba(55, 53, 47, 0.12);
+  --진한선: rgba(55, 53, 47, 0.2);
+  --올림: rgba(55, 53, 47, 0.06);
+  --올림진: rgba(55, 53, 47, 0.1);
+  --주색: #2383e2;
+  --주색진: #0b6bcb;
+  --주색바탕: rgba(35, 131, 226, 0.08);
+  --성공: #448361;
+  --성공바탕: #edf3ec;
+  --경고: #9f6b53;
+  --경고바탕: #fbf3db;
+  --오류: #d44c47;
+  --오류바탕: #fdebec;
+  --정보바탕: #f1f1ef;
+  --빈칸: #fbf3db;
+  --해당없음: #f1f1ef;
+  --서류선: #cfcdc8;
+  --그림자: 0 1px 2px rgba(15, 15, 15, 0.04), 0 3px 12px rgba(15, 15, 15, 0.05);
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
   background: var(--바탕);
   color: var(--글);
-  font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-  font-size: 16px;
-  line-height: 1.55;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ---- 맨 위 얇은 줄 (길 안내 + 설정) ---- */
 .맨위 {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-  padding: 12px 20px; background: var(--카드); border-bottom: 1px solid var(--선);
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  min-height: 46px; padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--선);
 }
-.맨위 h1 { margin: 0; font-size: 20px; }
-.맨위버튼 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.모드 { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: #e8f0fe; color: var(--주색진); }
-.모드.ai { background: #e6f4ea; color: var(--성공); }
+.길안내 { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--연한글); min-width: 0; }
+.길안내 .나눔 { color: var(--더연한글); }
+.길안내 .현재쪽 { color: var(--글); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.맨위버튼 { display: flex; align-items: center; gap: 6px; }
+.모드 { font-size: 12.5px; padding: 2px 8px; border-radius: 4px; background: var(--정보바탕); color: var(--연한글); }
+.모드.ai { background: var(--성공바탕); color: var(--성공); }
 .모드.경고 { background: var(--경고바탕); color: var(--경고); }
 
-/* 단계 표시 줄 */
-.단계줄 { display: flex; gap: 6px; list-style: none; margin: 0; padding: 12px 20px; background: var(--카드); border-bottom: 1px solid var(--선); overflow-x: auto; }
-.단계줄 li { flex: 1 1 0; min-width: 120px; text-align: center; padding: 8px 6px; border-radius: 8px; background: #eef1f4; color: var(--연한글); font-size: 15px; }
-.단계줄 li.현재 { background: var(--주색); color: #fff; font-weight: bold; }
-.단계줄 li.완료 { background: #e6f4ea; color: var(--성공); }
+/* ---- 쪽 머리 (큰 아이콘 + 제목 + 속성 + 단계) ---- */
+.쪽머리 { max-width: 1480px; margin: 0 auto; padding: 36px 48px 8px; }
+.쪽아이콘 { font-size: 64px; line-height: 1; margin-bottom: 10px; }
+.쪽머리 h1 { margin: 0 0 14px; font-size: 36px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+.속성들 { display: flex; flex-direction: column; gap: 2px; margin-bottom: 22px; }
+.속성 { display: flex; align-items: center; gap: 10px; font-size: 14px; min-height: 30px; }
+.속성이름 { width: 92px; color: var(--연한글); }
+.꼬리표 { display: inline-block; padding: 0 8px; border-radius: 4px; font-size: 13.5px; line-height: 22px; }
+.꼬리표.주황 { background: #fadec9; color: #6b3a1a; }
+.꼬리표.파랑 { background: #d3e5ef; color: #183347; }
+.꼬리표.초록 { background: #dbeddb; color: #1c3829; }
 
-.본문 { display: grid; grid-template-columns: minmax(340px, 420px) 1fr; gap: 16px; padding: 16px 20px 40px; align-items: start; }
-@media (max-width: 960px) { .본문 { grid-template-columns: 1fr; } }
+/* 단계: 노션 탭처럼 */
+.단계줄 { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0 0 0; border-bottom: 1px solid var(--선); overflow-x: auto; }
+.단계줄 li { display: flex; align-items: center; gap: 8px; padding: 8px 12px 10px; font-size: 14px; color: var(--연한글); white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.단계줄 .번호 { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; background: var(--올림진); color: var(--연한글); }
+.단계줄 li.현재 { color: var(--글); font-weight: 600; border-bottom-color: var(--글); }
+.단계줄 li.현재 .번호 { background: var(--글); color: #fff; }
+.단계줄 li.완료 { color: var(--성공); }
+.단계줄 li.완료 .번호 { background: var(--성공바탕); color: var(--성공); }
+.단계줄 li.완료 .번호::before { content: "✓"; }
+.단계줄 li.완료 .번호 { font-size: 0; }
+.단계줄 li.완료 .번호::before { font-size: 12px; }
 
-.왼쪽 { background: var(--카드); border: 1px solid var(--선); border-radius: 12px; padding: 18px; position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto; }
+/* ---- 본문: 왼쪽 단계 칸 + 오른쪽 서류 ---- */
+.본문 { max-width: 1480px; margin: 0 auto; display: grid; grid-template-columns: minmax(340px, 420px) 1fr; gap: 28px; padding: 20px 48px 60px; align-items: start; }
+@media (max-width: 960px) {
+  .본문 { grid-template-columns: 1fr; padding: 16px; }
+  .쪽머리 { padding: 24px 16px 8px; }
+}
+
+.왼쪽 { position: sticky; top: 62px; max-height: calc(100vh - 78px); overflow: auto; padding: 4px 6px 4px 0; }
 @media (max-width: 960px) { .왼쪽 { position: static; max-height: none; } }
-.왼쪽 h2 { margin: 0 0 8px; font-size: 18px; }
-.도움 { color: var(--연한글); font-size: 14px; margin: 4px 0 10px; }
+.왼쪽 h2 { margin: 2px 0 6px; font-size: 20px; font-weight: 600; }
+.도움 { color: var(--연한글); font-size: 14px; margin: 4px 0 12px; }
 
 textarea, input[type="text"], input[type="password"], select {
-  width: 100%; padding: 9px 10px; border: 1px solid var(--선); border-radius: 8px; font: inherit; background: #fff; color: var(--글);
+  width: 100%; padding: 8px 10px; font: inherit; color: var(--글); background: #fff;
+  border: 1px solid var(--진한선); border-radius: 6px; outline: none;
+  box-shadow: inset 0 1px 1px rgba(15, 15, 15, 0.03);
+  transition: border-color .12s, box-shadow .12s;
 }
-textarea { resize: vertical; }
-label { display: block; font-size: 14px; margin: 10px 0 4px; color: var(--글); }
-label.필수 { font-weight: bold; }
-.필수표시 { color: var(--오류); font-weight: bold; }
+textarea:focus, input:focus, select:focus { border-color: var(--주색); box-shadow: 0 0 0 3px rgba(35, 131, 226, 0.18); }
+textarea { resize: vertical; min-height: 110px; }
+textarea::placeholder, input::placeholder { color: var(--더연한글); }
+label { display: block; font-size: 13.5px; margin: 12px 0 4px; color: var(--연한글); }
+label.필수 { color: var(--글); font-weight: 600; }
+.필수표시 { color: var(--오류); font-weight: 600; }
 input.빠짐, textarea.빠짐 { border-color: var(--오류); background: var(--오류바탕); }
 
-button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--선); background: #fff; color: var(--글); padding: 9px 14px; }
-button:hover { background: #f0f3f6; }
-button.주요 { background: var(--주색); border-color: var(--주색); color: #fff; font-weight: bold; }
-button.주요:hover { background: var(--주색진); }
-button.보조 { padding: 6px 12px; font-size: 14px; }
-button:disabled { opacity: 0.45; cursor: not-allowed; }
+/* 버튼: 노션처럼 납작하게 */
+button {
+  font: inherit; font-size: 14px; cursor: pointer; color: var(--글); background: #fff;
+  border: 1px solid var(--진한선); border-radius: 6px; padding: 6px 12px; line-height: 1.4;
+  transition: background .12s;
+}
+button:hover { background: var(--올림); }
+button.주요 { background: var(--주색); border-color: var(--주색); color: #fff; font-weight: 500; }
+button.주요:hover { background: var(--주색진); border-color: var(--주색진); }
+button.보조 { border-color: transparent; background: transparent; padding: 4px 8px; color: var(--연한글); }
+button.보조:hover { background: var(--올림진); color: var(--글); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
 .버튼줄 { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 
-.알림 { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 14px; background: #e8f0fe; }
-.알림.오류 { background: var(--오류바탕); color: var(--오류); }
-.알림.경고 { background: var(--경고바탕); color: var(--경고); }
-.알림.성공 { background: #e6f4ea; color: var(--성공); }
+/* 알림: 노션 콜아웃 */
+.알림 {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin-top: 12px; padding: 12px 14px; border-radius: 6px; font-size: 14px;
+  background: var(--정보바탕); color: var(--글);
+}
+.알림::before { content: "💡"; flex: none; }
+.알림.오류 { background: var(--오류바탕); }
+.알림.오류::before { content: "⛔"; }
+.알림.경고 { background: var(--경고바탕); }
+.알림.경고::before { content: "⚠️"; }
+.알림.성공 { background: var(--성공바탕); }
+.알림.성공::before { content: "✅"; }
+.주의 { display: flex; gap: 10px; font-size: 13.5px; background: var(--경고바탕); border-radius: 6px; padding: 12px 14px; margin: 10px 0; }
+.주의::before { content: "⚠️"; flex: none; }
 
-.읽은결과 { font-size: 14px; background: #f7f9fb; border: 1px solid var(--선); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
-.읽은결과 dl { display: grid; grid-template-columns: 5.5em 1fr; row-gap: 2px; }
+.입력요약 { font-size: 14px; background: var(--옆바탕); border-left: 3px solid var(--글); border-radius: 0 6px 6px 0; padding: 10px 14px; margin-bottom: 16px; }
+.입력요약 b { display: block; font-size: 12.5px; color: var(--연한글); font-weight: 500; margin-bottom: 2px; }
+.입력요약 br { display: none; }
+
+.읽은결과 { font-size: 14px; background: var(--옆바탕); border-radius: 6px; padding: 10px 14px; margin: 8px 0; }
+.읽은결과 dl { display: grid; grid-template-columns: 5.5em 1fr; row-gap: 3px; }
 .읽은결과 dt { color: var(--연한글); }
 .읽은결과 dd { margin: 0; }
 
-.판단표 { width: 100%; border-collapse: collapse; font-size: 14px; margin: 6px 0 10px; }
-.판단표 th, .판단표 td { border: 1px solid var(--선); padding: 4px 6px; text-align: left; }
-.판단표 th { background: #f0f3f6; }
-.판단표 td.숫자 { text-align: center; }
-.판단표 tr.높음 td { background: var(--경고바탕); font-weight: bold; }
+/* 판단표: 노션 표처럼 세로줄 없이 */
+.판단표 { width: 100%; border-collapse: collapse; font-size: 14px; margin: 6px 0 12px; }
+.판단표 th, .판단표 td { border-bottom: 1px solid var(--선); padding: 6px 8px; text-align: left; }
+.판단표 th { color: var(--연한글); font-weight: 500; font-size: 13px; border-top: 1px solid var(--선); }
+.판단표 td.숫자, .판단표 th:not(:first-child) { text-align: center; }
+.판단표 tr.높음 td { background: var(--경고바탕); font-weight: 600; }
 
-details { margin: 8px 0; border: 1px solid var(--선); border-radius: 8px; padding: 6px 10px; }
-summary { cursor: pointer; font-weight: bold; }
+/* 토글 (details) */
+details { margin: 8px 0; border-radius: 6px; padding: 2px 4px; }
+summary { cursor: pointer; font-weight: 500; list-style: none; padding: 4px 6px; border-radius: 4px; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "▸"; display: inline-block; width: 1.1em; color: var(--연한글); transition: transform .12s; }
+details[open] > summary::before { transform: rotate(90deg); }
+summary:hover { background: var(--올림); }
+details > :not(summary) { margin-left: 1.1em; }
 .값줄 { margin: 6px 0; }
-.값줄 label { margin: 2px 0; font-size: 13px; color: var(--연한글); }
-.행묶음 { border-top: 1px dashed var(--선); margin-top: 8px; padding-top: 4px; }
-.수정됨 { border-color: var(--주색) !important; background: #eef4ff; }
+.값줄 label { margin: 2px 0; font-size: 12.5px; }
+.행묶음 { border-top: 1px solid var(--선); margin-top: 10px; padding-top: 6px; font-size: 13.5px; }
+.수정됨 { border-color: var(--주색) !important; background: var(--주색바탕) !important; }
 
-/* 오른쪽: 서류 4장 */
-.서류들 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+/* ---- 오른쪽: 서류 4장 (노션 페이지 카드) ---- */
+.서류들 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 @media (max-width: 1400px) { .서류들 { grid-template-columns: 1fr; } }
-.서류카드 { background: var(--카드); border: 1px solid var(--선); border-radius: 12px; overflow: hidden; }
+.서류카드 { background: #fff; border: 1px solid var(--선); border-radius: 8px; overflow: hidden; box-shadow: var(--그림자); }
 .서류카드.넓게 { grid-column: 1 / -1; }
-.서류카드 h3 { margin: 0; padding: 8px 14px; font-size: 15px; background: #eef1f4; border-bottom: 1px solid var(--선); }
-.서류내용 { padding: 10px 12px; overflow-x: auto; max-height: 560px; overflow-y: auto; }
-.서류제목 { font-weight: bold; text-align: center; margin: 4px 0 8px; }
+.서류카드 h3 { margin: 0; padding: 10px 14px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--선); background: #fff; }
+.서류카드 h3::before { content: "📄"; margin-right: 6px; }
+.서류내용 { padding: 12px 14px 16px; overflow-x: auto; max-height: 560px; overflow-y: auto; }
+.서류제목 { font-weight: 700; text-align: center; margin: 4px 0 10px; font-size: 15px; }
 .서류내용 table { border-collapse: collapse; width: 100%; font-size: 13px; }
-.서류내용 td { border: 1px solid var(--서류선); padding: 4px 6px; vertical-align: top; word-break: keep-all; overflow-wrap: anywhere; }
+.서류내용 td { border: 1px solid var(--서류선); padding: 5px 7px; vertical-align: top; word-break: keep-all; overflow-wrap: anywhere; }
 .서류내용 td.빈칸 { background: var(--빈칸); }
-.서류내용 td.해당없음 { background: #eef1f4; }
+.서류내용 td.해당없음 { background: var(--해당없음); }
 
-dialog { border: 1px solid var(--선); border-radius: 12px; padding: 18px; max-width: 760px; width: calc(100vw - 32px); }
-dialog::backdrop { background: rgba(20, 30, 40, 0.45); }
-dialog h2 { margin-top: 0; }
-.양식줄 { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 14px; flex-wrap: wrap; }
-.양식줄 b { min-width: 9em; }
-.시험표 { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-.시험표 th, .시험표 td { border: 1px solid var(--선); padding: 4px 6px; text-align: left; vertical-align: top; }
-.시험표 td.통과 { color: var(--성공); font-weight: bold; }
-.시험표 td.실패 { color: var(--오류); font-weight: bold; }
-.시험표 td.참고 { color: var(--경고); font-weight: bold; }
-.주의 { font-size: 13px; color: var(--경고); background: var(--경고바탕); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
-.표시표 { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0; }
-.표시표 td { border: 1px solid var(--선); padding: 3px 6px; vertical-align: top; }
+/* ---- 설정 창 ---- */
+dialog { border: none; border-radius: 10px; padding: 24px 28px; max-width: 760px; width: calc(100vw - 32px); color: var(--글);
+  box-shadow: 0 0 0 1px rgba(15, 15, 15, 0.05), 0 5px 10px rgba(15, 15, 15, 0.1), 0 15px 40px rgba(15, 15, 15, 0.2); }
+dialog::backdrop { background: rgba(15, 15, 15, 0.45); }
+dialog h2 { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
+.소제목 { margin: 22px 0 6px; font-size: 16px; font-weight: 600; padding-top: 14px; border-top: 1px solid var(--선); }
+.양식줄 { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 14px; flex-wrap: wrap; padding: 4px 0; }
+.양식줄 b { min-width: 9em; font-weight: 500; }
+.양식줄 span { color: var(--연한글); }
+code { font-family: "SFMono-Regular", Consolas, "D2Coding", monospace; font-size: 0.9em; background: rgba(135, 131, 120, 0.15); color: #eb5757; padding: 1px 5px; border-radius: 4px; }
+
+.표시표 { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 6px 0; }
+.표시표 td { border-bottom: 1px solid var(--선); padding: 4px 6px; vertical-align: middle; }
 .표시표 td:first-child { width: 1%; white-space: nowrap; }
-.표시칩 { font-family: Consolas, "D2Coding", monospace; font-size: 13px; padding: 2px 8px; border-radius: 6px; background: #eef4ff; border-color: #c9dafc; color: var(--주색진); }
-.표시칩:hover { background: #dce8ff; }
-.입력요약 { font-size: 14px; background: #eef4ff; border: 1px solid #c9dafc; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
+.표시칩 { font-family: "SFMono-Regular", Consolas, "D2Coding", monospace; font-size: 12.5px; padding: 1px 7px; border-radius: 4px;
+  background: rgba(135, 131, 120, 0.15); border: none; color: #eb5757; }
+.표시칩:hover { background: rgba(135, 131, 120, 0.28); }
