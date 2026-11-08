@@ -242,3 +242,11 @@ code { font-family: "SFMono-Regular", Consolas, "D2Coding", monospace; font-size
 .길링크 { color: var(--연한글); text-decoration: none; border-radius: 4px; padding: 1px 4px; }
 .길링크:hover { background: var(--올림진); color: var(--글); }
 .표시묶음 { font-weight: 600; background: var(--옆바탕); padding-top: 8px !important; }
+
+/* 설정: 키 입력 + API 키 만들러 가기 */
+.키줄 { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+.키줄 input { flex: 1 1 260px; }
+.링크버튼 { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 6px; font-size: 14px; white-space: nowrap;
+  text-decoration: none; color: var(--주색진); background: var(--주색바탕); border: 1px solid rgba(35, 131, 226, 0.25); }
+.링크버튼:hover { background: rgba(35, 131, 226, 0.15); }
+
