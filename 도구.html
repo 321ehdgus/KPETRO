@@ -9,7 +9,7 @@
 <body>
 
 <header class="맨위">
-  <div class="길안내"><span>🦺 안전 업무</span><span class="나눔">/</span><span class="현재쪽">수시 위험성평가 서류 도우미</span></div>
+  <div class="길안내"><span>🦺 안전 업무</span><span class="나눔">/</span><a href="#" id="길처음" class="길링크">수시 위험성평가 서류 도우미</a><span class="나눔" id="길나눔" hidden>/</span><span class="현재쪽" id="길작업" hidden></span></div>
   <div class="맨위버튼">
     <span id="모드표시" class="모드"></span>
     <button id="설정열기" class="보조">⚙️ 설정</button>
@@ -17,14 +17,15 @@
 </header>
 
 <section class="쪽머리">
-  <div class="쪽아이콘" aria-hidden="true">🦺</div>
-  <h1>수시 위험성평가 서류 도우미</h1>
+  <button type="button" id="작업고르기버튼" class="보조 돌아가기" hidden>← 다른 작업 고르기</button>
+  <div class="쪽아이콘" id="쪽아이콘" aria-hidden="true">🦺</div>
+  <h1 id="쪽제목">수시 위험성평가 서류 도우미</h1>
   <div class="속성들">
-    <div class="속성"><span class="속성이름">작업 종류</span><span class="꼬리표 주황">고소작업</span></div>
+    <div class="속성" id="작업속성" hidden><span class="속성이름">작업 종류</span><span class="꼬리표" id="작업꼬리표"></span></div>
     <div class="속성"><span class="속성이름">판단</span><span class="꼬리표 파랑">AI (구글 Gemini)</span></div>
     <div class="속성"><span class="속성이름">결과</span><span class="꼬리표 초록">한글 서류 4종 (.hwpx)</span></div>
   </div>
-  <ol id="단계줄" class="단계줄">
+  <ol id="단계줄" class="단계줄" hidden>
     <li data-단계="1"><span class="번호">1</span>입력</li>
     <li data-단계="2"><span class="번호">2</span>부족한 정보</li>
     <li data-단계="3"><span class="번호">3</span>서류 확인</li>
@@ -32,7 +33,14 @@
   </ol>
 </section>
 
-<main class="본문">
+<!-- 첫 화면: 작업 종류 고르기 -->
+<section id="첫화면" class="첫화면">
+  <h2>어떤 작업의 서류를 만들까요?</h2>
+  <p class="도움">작업을 고르면 한 줄(+현장 사진)로 승인요청서, TBM 일지, 안전작업 허가서, 위험성평가표 초안을 만들어요.</p>
+  <div id="작업카드들" class="작업카드들"></div>
+</section>
+
+<main class="본문" id="도구본문" hidden>
   <section class="왼쪽" id="왼쪽">
 
     <!-- 1단계: 한 줄 입력 -->
@@ -119,6 +127,7 @@
 <script src="라이브러리/jszip.min.js"></script>
 <script src="데이터.js"></script>
 <script src="양식/양식데이터.js"></script>
+<script src="작업종류.js"></script>
 <script src="규칙.js"></script>
 <script src="서류.js"></script>
 <script src="AI.js"></script>
@@ -145,6 +154,7 @@
     보낸사진: [],      // 판단할 때 AI에 보낸 사진 (사진 점검 결과와 짝을 맞추려고 따로 둔다)
     사진확인: false,
     긴글확인: "",     // 500자 넘는 글을 "그래도 보내기"로 확인한 글   // 이상한 사진이 있을 때 "그대로 진행"을 골랐는지
+    작업: null,        // 고른 작업 종류 (작업종류.js의 하나). null이면 첫 화면
     사진들: [],        // 현장 사진 [{ 이름, 종류, 글자(base64), 미리(화면용 주소) }] — AI에만 보내고 저장하지 않음
   };
   서류.서류이름.forEach(function (이름) { 상태.양식[이름] = window.양식데이터[이름]; });
@@ -199,8 +209,12 @@
   }
 
   // ----- 서류 값 (자동으로 만든 값 + 3단계에서 고친 값) -----
-  function 빈결과() { return 규칙.결과다듬기({ 고소작업여부: true }); }
-  function 기본값들() { return 서류.값만들기(상태.결과 || 빈결과(), 상태.입력); }
+  // 허가서 체크 항목 수 (데이터.js에서): { 공통: 7, 고소: 8, 중량: 8, … }
+  var 항목수 = {};
+  Object.keys(window.데이터.허가서항목).forEach(function (k) { 항목수[k] = window.데이터.허가서항목[k].length; });
+  function 지금작업() { return 상태.작업 || 작업종류.기본; }
+  function 빈결과() { return 규칙.결과다듬기({ 해당작업여부: true }, { 체크수: 항목수[지금작업().허가서구분] || 0, 공통수: 항목수.공통 }); }
+  function 기본값들() { return 서류.값만들기(상태.결과 || 빈결과(), 상태.입력, { 작업: 지금작업(), 항목수: 항목수 }); }
   function 최종값들() {
     var 값 = 기본값들();
     Object.keys(상태.수정).forEach(function (서류이름) {
@@ -298,6 +312,8 @@
 
   async function 판단하기(글, 진행알림) {
     return AI.분석(글, { 키: 상태.설정.키, 모델: 상태.설정.모델 }, {
+      작업: 지금작업(),
+      다른작업들: 작업종류.목록,
       알림: 진행알림,
       사진들: 상태.사진들.map(function (p) { return { 종류: p.종류, 글자: p.글자 }; }),
     });
@@ -421,11 +437,19 @@
     var 정보 = 결과.정보;
     var 읽음 = $("#읽은결과"), 칸 = $("#되묻기칸");
     사진점검그리기();
-    if (!결과.고소작업여부) {
+    if (!결과.해당작업여부) {
+      var 지금 = 지금작업();
+      var 추천 = 작업종류.찾기(결과.추천작업);
+      if (추천 && 추천.키 === 지금.키) 추천 = null;
       읽음.innerHTML = "";
-      칸.innerHTML = '<div class="알림 경고">이 작업은 <b>' + 이스케이프(결과.범위밖사유 || "고소작업이 아닌 작업") + "</b>이라서, 이번 버전에서는 서류를 만들지 않아요.<br>지원하는 작업: 고소작업(사다리, 비계, 고소작업대, 지붕·외벽 등 높은 곳 작업)</div>" +
-        '<div class="버튼줄"><button id="다른작업">다른 작업 적기</button></div>';
+      칸.innerHTML = '<div class="알림 경고"><div>이 작업은 <b>' + 이스케이프(지금.이름) + "</b>이 아닌 것 같아요." +
+        (결과.범위밖사유 ? "<br>" + 이스케이프(결과.범위밖사유) : "") +
+        (추천 ? "<br>" + 추천.아이콘 + " <b>" + 이스케이프(추천.이름) + "</b>으로 만드는 게 맞아 보여요." : "") + "</div></div>" +
+        '<div class="버튼줄">' + (추천 ? '<button id="추천작업으로" class="주요">' + 추천.아이콘 + " " + 이스케이프(추천.이름) + "으로 가서 다시 판단</button>" : "") +
+        '<button id="다른작업">다른 작업 적기</button><button id="그래도진행">그래도 ' + 이스케이프(지금.이름) + "으로 진행</button></div>";
       $("#다른작업").addEventListener("click", function () { 단계이동(1); });
+      $("#그래도진행").addEventListener("click", function () { 결과.해당작업여부 = true; 되묻기그리기(); });
+      if (추천) $("#추천작업으로").addEventListener("click", function () { 작업고르기(추천.키, true); });
       $("#다음2").disabled = true;
       return;
     }
@@ -470,7 +494,7 @@
 
   function 다음확인() {
     var 결과 = 상태.결과;
-    if (!결과 || !결과.고소작업여부) { $("#다음2").disabled = true; return; }
+    if (!결과 || !결과.해당작업여부) { $("#다음2").disabled = true; return; }
     var 빠진 = 규칙.빠진정보찾기(결과.정보);
     var 필수남음 = 빠진.필수.some(function (키) { return !(상태.입력[키] || "").trim(); });
     var 확인남음 = 빠진.확인.length > 0 && !상태.확인함;
@@ -671,13 +695,25 @@
     서류.서류이름.forEach(function (이름) {
       var 줄들 = [], 전체 = [];
       서류.표시설명[이름].forEach(function (쌍) {
-        var 범위 = 쌍[0].match(/^(공통|고소)1~\1(\d+)$/);
+        if (쌍[0] === "작업별체크") {
+          작업종류.목록.forEach(function (작업) {
+            var 목록 = window.데이터.허가서항목[작업.허가서구분] || [];
+            줄들.push('<tr><td colspan="2" class="표시묶음">' + 작업.아이콘 + " " + 이스케이프(작업.이름) + (목록.some(function (x) { return x.출처 === "가상"; }) ? ' <span class="가상표시">가상 항목</span>' : "") + "</td></tr>");
+            목록.forEach(function (x, i) {
+              var 키 = 작업.허가서구분 + (i + 1);
+              전체.push("{{" + 키 + "}}");
+              줄들.push("<tr><td>" + 표시칩(키) + "</td><td>" + 이스케이프((i + 1) + ". " + x.항목 + " 체크 칸") + "</td></tr>");
+            });
+          });
+          return;
+        }
+        var 범위 = 쌍[0].match(/^(공통)1~\1(\d+)$/);
         if (범위) {
           var 항목 = window.데이터.허가서항목[범위[1]] || [];
           for (var i = 1; i <= parseInt(범위[2], 10); i++) {
             var 키 = 범위[1] + i;
             전체.push("{{" + 키 + "}}");
-            줄들.push("<tr><td>" + 표시칩(키) + "</td><td>" + 이스케이프((범위[1] === "공통" ? "공통 " : "고소 ") + i + ". " + ((항목[i - 1] || {}).항목 || "") + " 체크 칸") + "</td></tr>");
+            줄들.push("<tr><td>" + 표시칩(키) + "</td><td>" + 이스케이프("공통 " + i + ". " + ((항목[i - 1] || {}).항목 || "") + " 체크 칸") + "</td></tr>");
           }
         } else {
           전체.push("{{" + 쌍[0] + "}}");
@@ -724,13 +760,86 @@
   }
 
   // ----- 시작 -----
+  // ----- 첫 화면과 작업 고르기 -----
+  function 카드그리기() {
+    var 칸 = $("#작업카드들");
+    칸.innerHTML = "";
+    작업종류.목록.forEach(function (작업) {
+      var 가상 = (window.데이터.허가서항목[작업.허가서구분] || []).some(function (x) { return x.출처 === "가상"; });
+      var 카드 = document.createElement("button");
+      카드.type = "button";
+      카드.className = "작업카드";
+      카드.setAttribute("data-작업", 작업.키);
+      카드.innerHTML = '<span class="카드아이콘">' + 작업.아이콘 + '</span><span class="카드이름">' + 이스케이프(작업.이름) + '</span><span class="카드설명">' + 이스케이프(작업.설명) + "</span>" +
+        '<span class="카드꼬리"><span class="꼬리표 ' + 작업.색 + '">허가서 체크 ' + ((window.데이터.허가서항목[작업.허가서구분] || []).length) + "개</span>" + (가상 ? ' <span class="가상표시">가상 항목</span>' : "") + "</span>";
+      카드.addEventListener("click", function () { 작업고르기(작업.키); });
+      칸.appendChild(카드);
+    });
+  }
+
+  // 화면을 첫 화면 또는 고른 작업으로 맞춘다
+  function 화면맞추기() {
+    var 작업 = 상태.작업;
+    $("#첫화면").hidden = !!작업;
+    $("#도구본문").hidden = !작업;
+    $("#단계줄").hidden = !작업;
+    $("#작업고르기버튼").hidden = !작업;
+    $("#작업속성").hidden = !작업;
+    $("#길나눔").hidden = !작업;
+    $("#길작업").hidden = !작업;
+    $("#쪽아이콘").textContent = 작업 ? 작업.아이콘 : "🦺";
+    $("#쪽제목").textContent = 작업 ? 작업.이름 + " 서류 도우미" : "수시 위험성평가 서류 도우미";
+    document.title = 작업 ? 작업.이름 + " · 수시 위험성평가 서류 도우미" : "수시 위험성평가 서류 도우미";
+    if (작업) {
+      $("#길작업").textContent = 작업.아이콘 + " " + 작업.이름;
+      var 꼬리 = $("#작업꼬리표");
+      꼬리.textContent = 작업.이름;
+      꼬리.className = "꼬리표 " + 작업.색;
+      $("#한줄").placeholder = 작업.예시;
+    }
+  }
+
+  // 작업을 고른다. 이어서=true면 지금 적은 한 줄과 사진을 그대로 가져가 바로 다시 판단한다.
+  function 작업고르기(키, 이어서) {
+    var 작업 = 작업종류.찾기(키);
+    if (!작업) { 첫화면으로(); return; }
+    var 글 = $("#한줄").value;
+    상태.작업 = 작업;
+    상태.결과 = null; 상태.입력 = {}; 상태.수정 = {}; 상태.확인함 = false; 상태.보낸사진 = []; 상태.사진확인 = false; 상태.긴글확인 = "";
+    if (!이어서) { 상태.사진들 = []; $("#한줄").value = ""; } else { $("#한줄").value = 글; }
+    사진목록그리기(); 글자수그리기(); 분석상태쓰기("");
+    if (location.hash !== "#" + 작업.키) history.replaceState(null, "", "#" + 작업.키);
+    화면맞추기();
+    서류.서류이름.forEach(행수세기);
+    미리보기갱신();
+    단계이동(1);
+    window.scrollTo(0, 0);
+    if (이어서) 분석하기();
+  }
+  function 첫화면으로() {
+    상태.작업 = null;
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+    화면맞추기();
+    알림("");
+    window.scrollTo(0, 0);
+  }
+
   function 시작() {
     설정불러오기();
     모드그리기();
     서류카드만들기();
+    카드그리기();
     서류.서류이름.forEach(행수세기);
     미리보기갱신();
     단계이동(1);
+    $("#작업고르기버튼").addEventListener("click", 첫화면으로);
+    $("#길처음").addEventListener("click", function (e) { e.preventDefault(); 첫화면으로(); });
+    window.addEventListener("hashchange", function () {
+      var 키 = decodeURIComponent(location.hash.slice(1));
+      if (!키) 첫화면으로(); else if (!상태.작업 || 상태.작업.키 !== 키) 작업고르기(키);
+    });
+    var 처음키 = decodeURIComponent(location.hash.slice(1));
+    if (처음키 && 작업종류.찾기(처음키)) 작업고르기(처음키); else 화면맞추기();
     if (!(상태.설정.키 || "").trim()) 알림("처음 한 번, 위쪽 '설정'에서 AI 키를 붙여 넣어 주세요. (키를 기억하게 하면 이 컴퓨터의 브라우저에만 저장됩니다.)", "경고");
     $("#분석버튼").addEventListener("click", 분석하기);
     $("#한줄").addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) 분석하기(); });

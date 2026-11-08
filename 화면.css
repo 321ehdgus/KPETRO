@@ -220,3 +220,25 @@ code { font-family: "SFMono-Regular", Consolas, "D2Coding", monospace; font-size
 .글자수 { text-align: right; font-size: 12px; color: var(--더연한글); margin-top: 2px; }
 .글자수.김 { color: var(--경고); }
 .글자수.넘침 { color: var(--오류); font-weight: 600; }
+
+/* 첫 화면: 작업 종류 카드 (노션 갤러리처럼) */
+.첫화면 { max-width: 1480px; margin: 0 auto; padding: 8px 48px 60px; }
+@media (max-width: 960px) { .첫화면 { padding: 8px 16px 40px; } }
+.첫화면 h2 { font-size: 20px; font-weight: 600; margin: 8px 0 4px; }
+.작업카드들 { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-top: 14px; }
+.작업카드 { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; padding: 18px 18px 16px; border: 1px solid var(--선); border-radius: 8px; background: #fff; box-shadow: var(--그림자); cursor: pointer; transition: background .12s, box-shadow .12s, transform .12s; }
+.작업카드:hover { background: var(--옆바탕); box-shadow: 0 2px 4px rgba(15,15,15,.06), 0 8px 20px rgba(15,15,15,.08); transform: translateY(-1px); }
+.작업카드:focus-visible { outline: 2px solid var(--주색); outline-offset: 2px; }
+.카드아이콘 { font-size: 36px; line-height: 1; }
+.카드이름 { font-size: 16px; font-weight: 600; color: var(--글); }
+.카드설명 { font-size: 13.5px; color: var(--연한글); line-height: 1.5; }
+.카드꼬리 { margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.꼬리표.갈색 { background: #eee0da; color: #442a1e; }
+.꼬리표.노랑 { background: #fdecc8; color: #402c1b; }
+.꼬리표.빨강 { background: #ffe2dd; color: #5d1715; }
+.꼬리표.회색 { background: #e3e2e0; color: #32302c; }
+.가상표시 { font-size: 12px; padding: 0 6px; border-radius: 4px; background: var(--경고바탕); color: var(--경고); line-height: 20px; }
+.돌아가기 { margin: 0 0 10px -8px; }
+.길링크 { color: var(--연한글); text-decoration: none; border-radius: 4px; padding: 1px 4px; }
+.길링크:hover { background: var(--올림진); color: var(--글); }
+.표시묶음 { font-weight: 600; background: var(--옆바탕); padding-top: 8px !important; }
